@@ -1,889 +1,714 @@
+/* =========================================
+   VISTAX CSS — Monitor de Siembra
+   Soporte: hasta 128 surcos en 10"
+   ========================================= */
 :root {
-    --bg-dark: #000000;
-    --bg-panel: #1a1a1a;
-    --bg-card: #252525;
-    --bg-input: #0a0a0a;
-    --accent: #00e676;
-    /* Verde OK */
-    --danger: #ff1744;
-    /* Rojo Alerta */
-    --warning: #ffea00;
-    --text: #ffffff;
-    --header-h: 60px;
-    --footer-h: 55px;
+  --bg-dark:    #000000;
+  --bg-panel:   #141414;
+  --bg-card:    #1e1e1e;
+  --bg-input:   #0a0a0a;
+  --accent:     #00e676;
+  --danger:     #ff1744;
+  --warning:    #ffea00;
+  --ferti-l:    #00e5ff;
+  --ferti-c:    #ffea00;
+  --text:       #ffffff;
+  --muted:      #666;
+  --header-h:   52px;
+  --footer-h:   46px;
+
+  /* Modos de pastilla */
+  --pill-h-normal:   42px;
+  --pill-h-compact:  26px;
+  --pill-h-mini:     14px;
+  --col-w-normal:    38px;
+  --col-w-compact:   24px;
+  --col-w-mini:      14px;
 }
 
+/* =========================================
+   BASE
+   ========================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-    background-color: var(--bg-dark);
-    color: var(--text);
-    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 0;
-    overflow: hidden;
-    height: 100vh;
+  background: var(--bg-dark);
+  color: var(--text);
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .vistax-app {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 /* =========================================
-   1. HEADER GLOBAL
+   1. HEADER
    ========================================= */
 .vistax-header {
-    height: var(--header-h);
-    display: flex;
-    background: var(--bg-panel);
-    padding: 0 15px;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #333;
-    flex-shrink: 0;
+  height: var(--header-h);
+  display: flex;
+  background: var(--bg-panel);
+  padding: 0 12px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #2a2a2a;
+  flex-shrink: 0;
+  gap: 8px;
 }
 
 .brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .logo {
-    font-weight: 900;
-    font-size: 22px;
-    color: var(--accent);
-    letter-spacing: -1px;
+  font-weight: 900;
+  font-size: 20px;
+  color: var(--accent);
+  letter-spacing: -1px;
 }
 
 .v-status {
-    font-size: 10px;
-    color: #aaa;
-    text-transform: uppercase;
+  font-size: 9px;
+  color: #555;
+  text-transform: uppercase;
+  background: #1a1a1a;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
 }
 
 .kpi-container {
-    display: flex;
-    gap: 20px;
+  display: flex;
+  gap: 0;
+  flex: 1;
+  justify-content: center;
 }
 
 .kpi {
-    text-align: center;
-    /* <--- CENTRA LOS TEXTOS (VELOCIDAD, DOSIS) */
-    border-right: 1px solid #333;
-    padding: 0 15px;
+  text-align: center;
+  border-right: 1px solid #2a2a2a;
+  padding: 0 14px;
+  flex-shrink: 0;
 }
+.kpi:last-child { border-right: none; }
 
 .kpi small {
-    display: block;
-    font-size: 9px;
-    color: #888;
-    text-transform: uppercase;
+  display: block;
+  font-size: 8px;
+  color: #666;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: .05em;
 }
 
 .kpi div {
-    font-size: 22px;
-    font-weight: bold;
-    color: white;
-    line-height: 1;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  line-height: 1.1;
 }
+.kpi div small { font-size: 11px; color: var(--accent); display: inline; }
 
-.kpi div small {
-    font-size: 12px;
-    color: var(--accent);
+.kpi-input {
+  background: #111;
+  border: 1px solid #333;
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  width: 70px;
+  border-radius: 4px;
+  padding: 1px 4px;
+  transition: border-color .2s;
 }
-
-.kpi:last-child {
-    border-right: none;
-    /* Evita la barrita al final */
-}
+.kpi-input:focus { outline: none; border-color: var(--accent); background: #000; }
 
 .status-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .status-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #555;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #333;
+  flex-shrink: 0;
+}
+.status-dot.online  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.status-dot.offline { background: var(--danger);  box-shadow: 0 0 6px var(--danger); }
+
+/* Botones de herramientas en header/footer */
+.btn-tool {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  color: #aaa;
+  width: 32px; height: 32px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  transition: all .15s;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.btn-tool:hover { background: #2a2a2a; color: var(--accent); border-color: #444; }
+.btn-tool.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+/* Badge lote activo en header */
+.lote-activo-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #0d2b1a;
+  border: 1px solid #1a5c35;
+  border-radius: 10px;
+  padding: 3px 8px;
+  font-size: 9px;
+  color: var(--accent);
+  font-weight: 700;
+  max-width: 120px;
+  overflow: hidden;
 }
 
-.status-dot.online {
-    background: var(--accent);
-    box-shadow: 0 0 8px var(--accent);
+.lote-nombre-badge {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.status-dot.offline {
-    background: var(--danger);
-    box-shadow: 0 0 8px var(--danger);
+.rec-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+  animation: blink 1s infinite;
 }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
 
 /* =========================================
-   2. MONITOR GRID (Pastillas)
+   2. MONITOR GRID (zona de pastillas)
    ========================================= */
 .monitor-wrapper {
-    flex: 1;
-    display: flex;
-    background: radial-gradient(circle at center, #111 0%, #000 100%);
-    overflow: hidden;
+  flex: 1;
+  display: flex;
+  background: #050505;
+  overflow: hidden;
 }
 
 .monitor-grid {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    gap: 12px;
-    overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 6px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .tren-row-wrapper {
-    display: flex;
-    flex-direction: column;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 4px;
-    padding: 8px;
-    border: 1px solid #222;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,.015);
+  border-radius: 4px;
+  border: 1px solid #1a1a1a;
+  padding: 5px 6px;
+  flex-shrink: 0;
 }
 
 .tren-title {
-    font-size: 11px;
-    color: #666;
-    margin-bottom: 8px;
-    font-weight: bold;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+  font-size: 9px;
+  color: #444;
+  margin-bottom: 4px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding-right: 4px;
+  user-select: none;
 }
+.tren-title:hover { color: #777; }
 
 .tren-row {
-    display: flex;
-    overflow-x: auto;
-    gap: 4px;
-    padding-bottom: 5px;
-    justify-content: center;
-    /* <--- ESTO CENTRA LOS SURCOS */
+  display: flex;
+  overflow-x: auto;
+  gap: 2px;
+  padding-bottom: 2px;
+  justify-content: center;
+  scrollbar-width: none;
 }
+.tren-row::-webkit-scrollbar { display: none; }
 
+/* =========================================
+   COLUMNA DE SURCO — 3 modos de densidad
+   ========================================= */
+
+/* NORMAL: hasta ~48 surcos en 10" */
 .surco-column {
-    min-width: 38px;
-    max-width: 45px;
-    flex: 1;
-    background: #111;
-    border: 1px solid #333;
-    border-radius: 3px;
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-    transition: 0.2s;
+  min-width: var(--col-w-normal);
+  max-width: 48px;
+  flex: 1;
+  background: #0a0a0a;
+  border: 1px solid #1e1e1e;
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: border-color .15s;
 }
+.surco-column:hover { border-color: #444; }
 
 .surco-id {
-    font-size: 10px;
-    text-align: center;
-    padding: 2px 0;
-    color: #888;
-    background: #1a1a1a;
-    border-bottom: 1px solid #333;
+  font-size: 9px;
+  text-align: center;
+  padding: 1px 0;
+  color: #555;
+  background: #111;
+  border-bottom: 1px solid #1e1e1e;
+  line-height: 1.4;
+  font-weight: 700;
 }
 
-.pills-area {
-    padding: 3px;
-}
+.pills-area { padding: 2px; display: flex; flex-direction: column; gap: 2px; }
 
 .pill-status {
-    height: 40px;
-    width: 100%;
-    border-radius: 2px;
-    border: 1px solid rgba(0, 0, 0, 0.3);
+  height: var(--pill-h-normal);
+  width: 100%;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,.4);
+  transition: background .1s;
 }
 
+/* COMPACTO: 48–96 surcos */
+.modo-compact .surco-column {
+  min-width: var(--col-w-compact);
+  max-width: 28px;
+  border-radius: 2px;
+}
+.modo-compact .surco-id {
+  font-size: 7px;
+  padding: 0;
+  line-height: 1.5;
+}
+.modo-compact .pills-area { padding: 1px; gap: 1px; }
+.modo-compact .pill-status { height: var(--pill-h-compact); }
+
+/* MINI: 96–128+ surcos — pastilla solo color, sin número interno */
+.modo-mini .tren-row { gap: 1px; }
+.modo-mini .surco-column {
+  min-width: var(--col-w-mini);
+  max-width: 16px;
+  border-radius: 1px;
+  border-width: 1px;
+}
+.modo-mini .surco-id {
+  font-size: 6px;
+  padding: 0;
+  line-height: 1.4;
+  /* En mini, los números pares se ocultan para no saturar visualmente */
+}
+.modo-mini .surco-id.par { display: none; }
+.modo-mini .pills-area { padding: 1px; gap: 0; }
+.modo-mini .pill-status { height: var(--pill-h-mini); border-radius: 1px; }
+
+/* =========================================
+   ESTADOS DE PASTILLA
+   ========================================= */
 .status-ok {
-    background: linear-gradient(to bottom, #00e676, #00a040);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(to bottom, #00e676, #00a040);
 }
-
 .status-alerta {
-    background: linear-gradient(to bottom, #ff1744, #b71c1c);
-    box-shadow: 0 0 10px var(--danger);
-    animation: parpadeo 0.6s infinite;
+  background: linear-gradient(to bottom, #ff1744, #b71c1c);
+  box-shadow: 0 0 6px rgba(255,23,68,.6);
+  animation: parpadeo .5s infinite;
 }
-
 .status-tapado {
-    background: #050505;
-    border: 1px solid #222;
+  background: #080808;
+  border-color: #111 !important;
 }
+/* Fertilizante línea */
+.pill-ferti-linea.status-ok    { background: linear-gradient(to bottom, #00e5ff, #0097a7); }
+.pill-ferti-costado.status-ok  { background: linear-gradient(to bottom, #ffea00, #f9a825); }
+
+/* Columna con falla — borde rojo en el padre */
+.surco-column.falla { border-color: var(--danger) !important; }
 
 /* =========================================
-   3. MODAL DE CONFIGURACIÓN PRO
-   ========================================= */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.9);
-    backdrop-filter: blur(4px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-}
-
-.modal-content.config-fullscreen {
-    width: 96vw;
-    height: 90vh;
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-    padding: 15px 25px;
-    background: #222;
-    border-bottom: 1px solid #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-header h2 {
-    margin: 0;
-    font-size: 18px;
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.config-layout {
-    display: flex;
-    flex: 1;
-    /* Ocupa el espacio entre header y footer */
-    overflow: hidden;
-}
-
-.config-sidebar {
-    width: 220px;
-    background: #151515;
-    border-right: 1px solid #333;
-    padding: 20px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.config-sidebar .tab-btn {
-    text-align: left;
-    padding: 12px 15px;
-    border-radius: 5px;
-    background: transparent;
-    border: 1px solid transparent;
-    color: #888;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.config-sidebar .tab-btn i {
-    width: 20px;
-    margin-right: 10px;
-}
-
-.config-sidebar .tab-btn.active {
-    background: var(--accent);
-    color: #000;
-}
-
-.config-sidebar .tab-btn:hover:not(.active) {
-    background: #252525;
-    color: #fff;
-}
-
-.config-main {
-    flex: 1;
-    padding: 25px;
-    overflow-y: auto;
-    background: #111;
-}
-
-/* Tarjetas de Input */
-.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 20px;
-}
-
-.input-card {
-    background: var(--bg-card);
-    padding: 15px;
-    border-radius: 6px;
-    border: 1px solid #333;
-}
-
-.input-card label {
-    display: block;
-    font-size: 10px;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    font-weight: bold;
-}
-
-.input-card input {
-    width: 100%;
-    background: var(--bg-input);
-    border: 1px solid #444;
-    color: white;
-    padding: 10px;
-    border-radius: 4px;
-    font-size: 16px;
-    box-sizing: border-box;
-}
-
-/* Tabla de Sensores */
-.table-header-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.config-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.config-table th {
-    text-align: left;
-    color: #666;
-    font-size: 10px;
-    text-transform: uppercase;
-    padding: 12px;
-    border-bottom: 2px solid #333;
-}
-
-.config-table td {
-    padding: 10px;
-    border-bottom: 1px solid #222;
-}
-
-.config-table input,
-.config-table select {
-    background: #000;
-    color: #fff;
-    border: 1px solid #333;
-    padding: 6px;
-    border-radius: 3px;
-    width: 100%;
-}
-
-.btn-add {
-    background: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-delete {
-    color: var(--danger);
-    background: none;
-    border: none;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-/* Mapeo Visual */
-.mapeo-visual-canvas {
-    background: #050505;
-    padding: 20px;
-    border-radius: 6px;
-    border: 1px solid #222;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.mapeo-tren-row {
-    background: rgba(255, 255, 255, 0.02);
-    padding: 12px;
-    border-radius: 4px;
-    border-left: 4px solid var(--accent);
-}
-
-.mapeo-box {
-    width: 32px;
-    height: 32px;
-    background: #222;
-    border: 1px solid #444;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    color: var(--accent);
-    font-weight: bold;
-}
-
-/* Footer del Modal */
-.modal-footer {
-    padding: 15px 25px;
-    background: #222;
-    border-top: 1px solid #333;
-    display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    flex-shrink: 0;
-}
-
-.btn-cancel {
-    background: #444;
-    color: white;
-    border: none;
-    padding: 12px 25px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-save {
-    background: var(--accent);
-    color: black;
-    border: none;
-    padding: 12px 30px;
-    border-radius: 4px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* =========================================
-   4. ANIMACIONES Y OTROS
-   ========================================= */
-@keyframes parpadeo {
-    50% {
-        opacity: 0.3;
-    }
-}
-
-@keyframes alert-shake {
-    25% {
-        transform: translateX(3px);
-    }
-
-    75% {
-        transform: translateX(-3px);
-    }
-}
-
-.close-btn {
-    background: transparent;
-    border: none;
-    color: #888;
-    font-size: 30px;
-    cursor: pointer;
-}
-
-.close-btn:hover {
-    color: var(--danger);
-}
-
-::-webkit-scrollbar {
-    height: 6px;
-    width: 6px;
-}
-
-::-webkit-scrollbar-track {
-    background: #000;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 10px;
-}
-
-/* =========================================
-   3. FOOTER (Sensores Especiales y Alertas)
+   3. FOOTER
    ========================================= */
 .vistax-footer {
-    height: var(--footer-h);
-    background: var(--bg-panel);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 15px;
-    border-top: 1px solid #333;
-    flex-shrink: 0;
+  height: var(--footer-h);
+  background: var(--bg-panel);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-top: 1px solid #1e1e1e;
+  flex-shrink: 0;
+  gap: 8px;
 }
 
 .lote-info {
-    font-size: 11px;
-    color: #555;
-    font-weight: bold;
-    white-space: nowrap;
+  font-size: 10px;
+  color: #444;
+  font-weight: 700;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #1e1e1e;
+  transition: border-color .15s, color .15s;
 }
+.lote-info:hover { border-color: #333; color: #888; }
+.lote-info.activo { color: var(--accent); border-color: #1a5c35; background: #0d2b1a0a; }
+.lote-info i { color: var(--accent); }
 
 .alert-ticker {
-    flex: 1;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 900;
-    color: #444;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
 .alert-ticker.active-alert {
-    color: var(--danger);
-    animation: alert-shake 0.5s infinite;
+  color: var(--danger);
+  animation: alert-shake .4s infinite;
 }
 
-/* CONTENEDOR DE TARJETAS ESPECIALES */
 .especiales-container {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    justify-content: center;
-    /* <--- CENTRA LAS TURBINAS Y TOLVAS */
-    flex: 1;
-    /* Para que ocupe el espacio central del footer */
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 1;
+  overflow: hidden;
 }
 
 .sensor-especial {
-    background: var(--bg-card);
-    border: 1px solid #444;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 90px;
-    transition: all 0.3s ease;
+  background: var(--bg-card);
+  border: 1px solid #333;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 80px;
+  flex-shrink: 0;
+  transition: all .2s;
 }
+.sensor-especial i { font-size: 15px; color: var(--accent); }
+.sensor-especial .info { display: flex; flex-direction: column; }
+.sensor-especial .info span { font-size: 8px; color: #666; text-transform: uppercase; line-height: 1; }
+.sensor-especial .info strong { font-size: 14px; color: white; font-weight: 900; line-height: 1.2; }
+.sensor-especial.falla { border-color: var(--danger); background: rgba(255,23,68,.08); }
+.sensor-especial.falla i, .sensor-especial.falla strong { color: var(--danger); animation: parpadeo .8s infinite; }
 
-.sensor-especial i {
-    font-size: 18px;
-    color: var(--accent);
-    /* Color verde por defecto */
-}
-
-.sensor-especial .info {
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-}
-
-.sensor-especial .info span {
-    font-size: 9px;
-    color: #888;
-    text-transform: uppercase;
-    line-height: 1;
-    margin-bottom: 2px;
-}
-
-.sensor-especial .info strong {
-    font-size: 15px;
-    color: white;
-    font-weight: 900;
-    line-height: 1;
-}
-
-/* ESTADO DE FALLA PARA ESPECIALES */
-.sensor-especial.falla {
-    border-color: var(--danger);
-    background: rgba(255, 23, 68, 0.1);
-    box-shadow: 0 0 10px rgba(255, 23, 68, 0.2);
-}
-
-.sensor-especial.falla i,
-.sensor-especial.falla strong {
-    color: var(--danger);
-    animation: parpadeo 0.8s infinite;
-}
-
-/* Input del Objetivo en el Header */
-.kpi-input {
-    background: #111;
-    border: 1px solid #333;
-    color: var(--accent);
-    font-size: 22px;
-    font-weight: bold;
-    text-align: center;
-    width: 75px;
-    border-radius: 4px;
-    padding: 2px;
-    transition: all 0.3s ease;
-}
-
-.kpi-input:focus {
-    outline: none;
-    border-color: var(--accent);
-    background: #000;
-}
+.actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 
 /* =========================================
-   5. MEDIA QUERIES PARA PANTALLAS PEQUEÑAS
+   MODAL RÁPIDO DE LOTE (desde footer)
    ========================================= */
-@media (max-width: 768px) {
+.modal-lote-box {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 10px;
+  width: 360px;
+  overflow: hidden;
+}
+.modal-lote-header {
+  background: #111;
+  padding: 14px 18px;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-lote-header h3 {
+  font-size: 14px;
+  color: var(--accent);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.modal-lote-body { padding: 18px; }
 
-    /* Header */
-    .vistax-header {
-        padding: 0 8px;
-    }
+.lote-hint { font-size: 12px; color: #666; margin-bottom: 16px; line-height: 1.5; }
 
-    .brand .logo {
-        font-size: 18px;
-    }
+.lote-activo-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.lote-stat { background: #111; border: 1px solid #2a2a2a; border-radius: 5px; padding: 8px 10px; }
+.lote-stat small { display: block; font-size: 8px; color: #555; font-weight: 700; text-transform: uppercase; margin-bottom: 3px; }
+.lote-stat strong { font-size: 14px; color: white; }
 
-    .v-status {
-        font-size: 8px;
-    }
+.form-group-lote { margin-bottom: 12px; }
+.form-group-lote label { display: block; font-size: 9px; color: #555; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
+.form-group-lote input,
+.form-group-lote select {
+  width: 100%; background: #111; border: 1px solid #333; color: white;
+  padding: 9px 11px; border-radius: 5px; font-size: 14px;
+}
+.form-group-lote input:focus,
+.form-group-lote select:focus { outline: none; border-color: var(--accent); }
 
-    .kpi-container {
-        gap: 8px;
-    }
+.modal-lote-actions { display: flex; gap: 10px; margin-top: 14px; }
+.btn-lote {
+  flex: 1; padding: 10px; border-radius: 5px; border: none;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  text-decoration: none; transition: filter .15s;
+}
+.btn-lote:hover { filter: brightness(1.2); }
+.btn-lote-iniciar { background: #0d2b1a; border: 1px solid #1a5c35; color: var(--accent); }
+.btn-lote-mapa    { background: #1a1a2b; border: 1px solid #2a2a5c; color: #7b8cff; }
+.btn-lote-cerrar  { background: #2b0d0d; border: 1px solid #5c1a1a; color: var(--danger); }
 
-    .kpi {
-        padding: 0 8px;
-    }
-
-    .kpi div {
-        font-size: 16px;
-    }
-
-    .kpi small {
-        font-size: 7px;
-    }
-
-    .kpi div small {
-        font-size: 9px;
-    }
-
-    .status-info {
-        gap: 8px;
-    }
-
-    .kpi-input {
-        font-size: 16px;
-        width: 55px;
-    }
-
-    /* Monitor grid */
-    .monitor-grid {
-        padding: 5px;
-        gap: 8px;
-    }
-
-    .tren-row-wrapper {
-        padding: 5px;
-    }
-
-    .tren-title {
-        font-size: 9px;
-        margin-bottom: 4px;
-    }
-
-    .surco-column {
-        min-width: 30px;
-        max-width: 35px;
-    }
-
-    .surco-id {
-        font-size: 8px;
-        padding: 1px 0;
-    }
-
-    .pills-area {
-        padding: 2px;
-    }
-
-    .pill-status {
-        height: 30px;
-    }
-
-    /* Footer */
-    .vistax-footer {
-        padding: 0 8px;
-    }
-
-    .lote-info {
-        font-size: 9px;
-    }
-
-    .especiales-container {
-        gap: 4px;
-    }
-
-    .sensor-especial {
-        min-width: 60px;
-        padding: 2px 6px;
-        gap: 5px;
-    }
-
-    .sensor-especial i {
-        font-size: 14px;
-    }
-
-    .sensor-especial .info span {
-        font-size: 7px;
-    }
-
-    .sensor-especial .info strong {
-        font-size: 12px;
-    }
-
-    .alert-ticker {
-        font-size: 11px;
-    }
-
-    /* Modal */
-    .modal-content.config-fullscreen {
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0;
-    }
-
-    .modal-header {
-        padding: 10px 15px;
-    }
-
-    .modal-header h2 {
-        font-size: 16px;
-    }
-
-    .config-layout {
-        flex-direction: column;
-    }
-
-    .config-sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #333;
-        padding: 10px;
-        flex-direction: row;
-        overflow-x: auto;
-        gap: 5px;
-    }
-
-    .config-sidebar .tab-btn {
-        padding: 8px 12px;
-        font-size: 12px;
-        white-space: nowrap;
-    }
-
-    .config-main {
-        padding: 15px;
-    }
-
-    .card-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .input-card {
-        padding: 12px;
-    }
-
-    .input-card input {
-        font-size: 14px;
-        padding: 8px;
-    }
-
-    .modal-footer {
-        padding: 10px 15px;
-    }
-
-    .btn-cancel,
-    .btn-save {
-        padding: 8px 15px;
-        font-size: 14px;
-    }
+/* =========================================
+   4. MODAL DE CONFIGURACIÓN
+   ========================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.92);
+  backdrop-filter: blur(3px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
 }
 
-@media (max-width: 480px) {
+.modal-content.config-fullscreen {
+  width: 96vw;
+  height: 92vh;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.7);
+}
 
-    /* Header más compacto */
-    .vistax-header {
-        flex-wrap: wrap;
-        height: auto;
-        min-height: var(--header-h);
-        padding: 5px 8px;
-    }
+.modal-header {
+  padding: 12px 20px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #2a2a2a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+.modal-header .header-title { display: flex; align-items: center; gap: 12px; }
+.modal-header h2 { margin: 0; font-size: 15px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.modal-header small { color: #555; font-size: 11px; display: block; margin-top: 2px; }
 
-    .brand {
-        width: 100%;
-        justify-content: space-between;
-    }
+.modal-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 
-    .kpi-container {
-        width: 100%;
-        justify-content: space-around;
-        margin: 5px 0;
-    }
+.config-layout { display: flex; flex: 1; overflow: hidden; }
 
-    .status-info {
-        width: 100%;
-        justify-content: flex-end;
-    }
+.config-sidebar {
+  width: 200px;
+  background: #0e0e0e;
+  border-right: 1px solid #222;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
 
-    .kpi {
-        border-right: none;
-        border-bottom: 1px solid #333;
-        padding: 5px 0;
-    }
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 
-    .kpi:last-child {
-        border-bottom: none;
-    }
+.tab-btn {
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #555;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tab-btn i { width: 16px; }
+.tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.tab-btn:hover:not(.active) { background: #1e1e1e; color: #ccc; border-color: #333; }
 
-    /* Footer apilado */
-    .vistax-footer {
-        flex-wrap: wrap;
-        height: auto;
-        padding: 5px 8px;
-        gap: 5px;
-    }
+.sidebar-info {
+  padding-top: 12px;
+  border-top: 1px solid #222;
+  margin-top: auto;
+}
+.sidebar-info label { font-size: 9px; color: #444; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px; }
 
-    .lote-info {
-        width: 100%;
-        text-align: center;
-    }
+.config-select-main {
+  width: 100%; background: #111; border: 1px solid #333; color: white;
+  padding: 7px 8px; border-radius: 4px; font-size: 12px;
+}
 
-    .especiales-container {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
+.config-main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: #0a0a0a;
+}
 
-    .alert-ticker {
-        width: 100%;
-        order: 3;
-    }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
-    /* Monitor grid más pequeño */
-    .surco-column {
-        min-width: 25px;
-        max-width: 30px;
-    }
+.section-header { margin-bottom: 16px; }
+.section-header h3 { font-size: 14px; color: #ccc; font-weight: 700; margin-bottom: 4px; }
+.section-header p  { font-size: 11px; color: #444; }
 
-    .pill-status {
-        height: 25px;
-    }
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
 
-    /* Modal tabs más pequeños */
-    .config-sidebar .tab-btn {
-        padding: 6px 8px;
-        font-size: 10px;
-    }
+.input-card {
+  background: #141414;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #222;
+}
+.input-card label { display: block; font-size: 9px; color: var(--accent); text-transform: uppercase; margin-bottom: 7px; font-weight: 700; }
+.input-card input {
+  width: 100%; background: #000; border: 1px solid #333; color: white;
+  padding: 9px; border-radius: 4px; font-size: 15px; box-sizing: border-box;
+}
+.input-card input:focus { outline: none; border-color: var(--accent); }
 
-    .config-sidebar .tab-btn i {
-        margin-right: 5px;
-    }
+/* Tabla sensores */
+.table-header-actions { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+.mapeo-container { overflow-x: auto; }
+.table-scroll { max-height: calc(92vh - 300px); overflow-y: auto; }
+
+.config-table { width: 100%; border-collapse: collapse; }
+.config-table th {
+  text-align: left; color: #444; font-size: 9px; text-transform: uppercase;
+  padding: 10px 8px; border-bottom: 2px solid #222; white-space: nowrap;
+}
+.config-table td { padding: 7px 8px; border-bottom: 1px solid #181818; }
+.config-table tr:hover td { background: #111; }
+.config-table input, .config-table select {
+  background: #000; color: #fff; border: 1px solid #2a2a2a;
+  padding: 5px 6px; border-radius: 3px; width: 100%; font-size: 13px;
+}
+
+.btn-action-add {
+  background: #003d99; color: white; border: 1px solid #0055cc;
+  padding: 8px 14px; border-radius: 4px; font-weight: 700; font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.btn-action-add:hover { background: #0055cc; }
+.btn-delete { color: var(--danger); background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px 8px; }
+.btn-cancel { background: #1e1e1e; color: #aaa; border: 1px solid #333; padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+/* Mapeo visual */
+.mapeo-visual-canvas {
+  background: #050505;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mapeo-tren-row {
+  background: rgba(255,255,255,.02);
+  padding: 10px;
+  border-radius: 4px;
+  border-left: 3px solid var(--accent);
+}
+
+/* Modal footer */
+.modal-footer {
+  padding: 12px 20px;
+  background: #111;
+  border-top: 1px solid #222;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.btn-footer {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+}
+.btn-save   { background: var(--accent); color: #000; }
+.btn-save:hover { filter: brightness(1.1); }
+
+.close-btn { background: transparent; border: none; color: #555; font-size: 26px; cursor: pointer; line-height: 1; padding: 0 4px; }
+.close-btn:hover { color: var(--danger); }
+
+/* =========================================
+   5. ANIMACIONES
+   ========================================= */
+@keyframes parpadeo { 50% { opacity: .25; } }
+@keyframes alert-shake { 25% { transform: translateX(2px); } 75% { transform: translateX(-2px); } }
+
+/* =========================================
+   6. SCROLLBAR
+   ========================================= */
+::-webkit-scrollbar { height: 4px; width: 4px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 10px; }
+
+/* =========================================
+   7. RESPONSIVE — pantalla 10" (1280×800)
+   ========================================= */
+@media (max-width: 1280px) {
+  .kpi { padding: 0 10px; }
+  .kpi div { font-size: 18px; }
+}
+
+/* Tablet / pantalla pequeña */
+@media (max-width: 900px) {
+  :root { --header-h: 48px; --footer-h: 42px; }
+  .logo { font-size: 18px; }
+  .kpi div { font-size: 16px; }
+  .kpi { padding: 0 8px; }
+  .kpi-input { font-size: 16px; width: 60px; }
+  .sensor-especial { min-width: 70px; padding: 2px 6px; }
+}
+
+/* Ocultar texto de KPIs en pantallas muy angostas */
+@media (max-width: 640px) {
+  .v-status { display: none; }
+  .kpi small { font-size: 7px; }
+  .kpi div { font-size: 14px; }
+  .lote-activo-badge { display: none; }
 }

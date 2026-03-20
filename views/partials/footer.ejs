@@ -1,17 +1,77 @@
 <footer class="vistax-footer">
-  <div class="lote-info">
-    <i class="fas fa-map-marker-alt"></i>
-    <span id="txt-lote">LOTE: SIN INICIAR</span>
+  <%# Lote — clickeable para iniciar/ver %>
+  <div class="lote-info" id="lote-info-footer" onclick="abrirModalLote()"
+       title="Click para gestionar lote" style="cursor:pointer;">
+    <i class="fas fa-seedling"></i>
+    <span id="txt-lote">
+      <% if (typeof loteActivo !== 'undefined' && loteActivo && loteActivo.id) { %>
+        <%= loteActivo.nombre.toUpperCase() %>
+      <% } else { %>
+        SIN LOTE — INICIAR
+      <% } %>
+    </span>
   </div>
-  <div id="alert-ticker" class="alert-ticker">
-    SISTEMA DE MONITOREO VISTAX LISTO
-  </div>
+
+  <%# Ticker de alertas — centro %>
+  <div class="alert-ticker" id="alert-ticker">SISTEMA VISTAX OPERATIVO</div>
+
+  <%# Sensores especiales (turbinas, ejes) %>
+  <div class="especiales-container" id="tren-especiales"></div>
+
+  <%# Controles %>
   <div class="actions">
-    <button class="btn-tool" onclick="abrirModal()">
-      <i class="fas fa-cog"></i>
-    </button>
-    <button class="btn-tool" onclick="toggleMute()">
+    <button class="btn-tool" onclick="toggleMute()" title="Silenciar alertas">
       <i class="fas fa-volume-up"></i>
+    </button>
+    <button class="btn-tool" onclick="abrirModal()" title="Configuración">
+      <i class="fas fa-cog"></i>
     </button>
   </div>
 </footer>
+
+<%# Modal rápido para gestión de lote desde el monitor principal %>
+<div id="modal-lote" class="modal-overlay" style="display:none;">
+  <div class="modal-lote-box">
+    <div class="modal-lote-header">
+      <h3><i class="fas fa-seedling"></i> GESTIÓN DE LOTE</h3>
+      <button class="close-btn" onclick="cerrarModalLote()">&times;</button>
+    </div>
+    <div class="modal-lote-body" id="modal-lote-body">
+      <%# Contenido dinámico según haya lote activo o no %>
+      <% if (loteActivo && loteActivo.id) { %>
+        <div class="lote-activo-info">
+          <div class="lote-stat"><small>LOTE</small><strong><%= loteActivo.nombre %></strong></div>
+          <div class="lote-stat"><small>CULTIVO</small><strong><%= loteActivo.cultivo %></strong></div>
+          <div class="lote-stat"><small>INICIO</small><strong id="li-inicio-footer">...</strong></div>
+          <div class="lote-stat"><small>PUNTOS GPS</small><strong id="li-puntos-footer">...</strong></div>
+        </div>
+        <div class="modal-lote-actions">
+          <a href="/mapa" class="btn-lote btn-lote-mapa">
+            <i class="fas fa-map-marked-alt"></i> VER MAPA
+          </a>
+          <button class="btn-lote btn-lote-cerrar" onclick="cerrarLoteDesdeMonitor()">
+            <i class="fas fa-stop-circle"></i> CERRAR LOTE
+          </button>
+        </div>
+      <% } else { %>
+        <p class="lote-hint">No hay un lote activo. Iniciá uno para comenzar a grabar el mapa de siembra.</p>
+        <div class="form-group-lote">
+          <label>Nombre del lote</label>
+          <input type="text" id="lote-inp-nombre" placeholder="Ej: Potrero Norte"/>
+        </div>
+        <div class="form-group-lote">
+          <label>Cultivo</label>
+          <select id="lote-inp-cultivo">
+            <option>Soja</option><option>Maíz</option><option>Girasol</option>
+            <option>Trigo</option><option>Sorgo</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="modal-lote-actions">
+          <button class="btn-lote btn-lote-iniciar" onclick="iniciarLoteDesdeMonitor()">
+            <i class="fas fa-play-circle"></i> INICIAR LOTE
+          </button>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

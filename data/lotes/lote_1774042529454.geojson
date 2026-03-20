@@ -1,0 +1,44 @@
+{
+  "type": "FeatureCollection",
+  "name": "Lote 1",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "metadata": {
+    "loteId": "lote_1774042529454",
+    "nombre": "Lote 1",
+    "cultivo": "Soja",
+    "startTs": 1774042529454,
+    "endTs": 1774042593718,
+    "estadisticas": {
+      "puntosGrabados": 1,
+      "spmPromedio": 0,
+      "spmMax": 0,
+      "spmMin": 0,
+      "alertasRegistradas": 0,
+      "distanciaRecorridaM": 0,
+      "hectareasAprox": 0
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -59.935359428333335,
+          -35.67306867
+        ]
+      },
+      "properties": {
+        "ts": 1774042529456,
+        "vel": 0,
+        "spmPromedio": 0,
+        "alerta": false
+      }
+    }
+  ]
+}

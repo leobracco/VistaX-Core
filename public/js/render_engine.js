@@ -1,280 +1,377 @@
+// ============================================================
+// VistaX — render_engine.js
+// Motor de render de pastillas + lógica de alertas + modo compacto
+// ============================================================
+
 const socket = io();
-let fallasActivas = new Set();
-let surcosConFalla = new Set();
 
-// UNIFICAMOS LOS DICCIONARIOS EN UNO SOLO PARA EVITAR CONFLICTOS
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+let fallasActivas   = new Set();
+let surcosConFalla  = new Set();
+let datosSurcos     = {};         // { bajada: { total_semillas, spm } }
+let modoCompacto    = 'normal';   // 'normal' | 'compact' | 'mini'
+let isMuted         = false;
+let playingAlarm    = false;
+
 const TIPOS_ESPECIALES = {
-  rotacion_eje: { icono: "fas fa-cogs", unidad: "RPM" },
-  turbina: { icono: "fas fa-fan", unidad: "RPM" },
-  bajada_herramienta: { icono: "fas fa-arrow-down", unidad: "ESTADO" },
-  bateria: { icono: "fas fa-car-battery", unidad: "V" },
-  tolva_vacia: { icono: "fas fa-archive", unidad: "ESTADO" },
+  rotacion_eje:      { icono: "fas fa-cogs",        unidad: "RPM"    },
+  turbina:           { icono: "fas fa-fan",          unidad: "RPM"    },
+  bajada_herramienta:{ icono: "fas fa-arrow-down",   unidad: "ESTADO" },
+  bateria:           { icono: "fas fa-car-battery",  unidad: "V"      },
+  tolva_vacia:       { icono: "fas fa-archive",      unidad: "ESTADO" },
 };
-// --- SISTEMA DE AUDIO Y ALARMAS ---
-let isMuted = false;
-let playingAlarm = false;
 
-// Creamos el elemento de audio dinámicamente
+// ============================================================
+// AUDIO
+// ============================================================
 const audioAlarma = document.createElement("audio");
-audioAlarma.id = "audio-alarma";
-audioAlarma.src = "/sounds/alarma1.mp3"; // Asegurate de poner un mp3 en public/sounds/
+audioAlarma.id   = "audio-alarma";
+audioAlarma.src  = "/sounds/alarma1.mp3";
 audioAlarma.loop = true;
 document.body.appendChild(audioAlarma);
 
-// Función atada al botón del footer: onclick="toggleMute()"
 window.toggleMute = function () {
   isMuted = !isMuted;
-  const btnTool = document.querySelector(
-    ".actions .btn-tool i.fa-volume-up, .actions .btn-tool i.fa-volume-mute",
-  );
-
-  if (btnTool) {
-    btnTool.className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
-    btnTool.style.color = isMuted ? "var(--danger)" : "white";
+  const icon = document.querySelector(".actions .btn-tool i.fa-volume-up, .actions .btn-tool i.fa-volume-mute");
+  if (icon) {
+    icon.className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
+    icon.style.color = isMuted ? "var(--danger)" : "";
   }
-
-  if (isMuted) {
-    audioAlarma.pause();
-    playingAlarm = false;
-  } else {
-    gestionarSonidoAlarma();
-  }
+  isMuted ? audioAlarma.pause() : gestionarSonidoAlarma();
 };
 
-// Se llama cada vez que se actualiza un estado
 function gestionarSonidoAlarma() {
   if (isMuted) return;
-
   if (fallasActivas.size > 0) {
     if (!playingAlarm) {
-      // El catch evita errores si el navegador bloquea el autoplay
-      audioAlarma
-        .play()
-        .catch((e) => console.log("Audio bloqueado por el navegador"));
+      audioAlarma.play().catch(() => {});
       playingAlarm = true;
     }
   } else {
     audioAlarma.pause();
-    audioAlarma.currentTime = 0; // Reinicia el sonido
+    audioAlarma.currentTime = 0;
     playingAlarm = false;
   }
 }
-// ==========================================
+
+// ============================================================
+// MODO COMPACTO — auto-selección según cantidad de surcos
+// ============================================================
+function detectarModo() {
+  const total = window.TOTAL_SURCOS || 0;
+  if (total > 96)      return 'mini';
+  if (total > 48)      return 'compact';
+  return 'normal';
+}
+
+window.toggleModoCompacto = function () {
+  const modos = ['normal', 'compact', 'mini'];
+  const idx   = modos.indexOf(modoCompacto);
+  modoCompacto = modos[(idx + 1) % modos.length];
+  aplicarModo(modoCompacto);
+
+  const btn  = document.getElementById('btn-modo');
+  const icon = btn && btn.querySelector('i');
+  if (icon) {
+    icon.className = modoCompacto === 'mini'    ? 'fas fa-th' :
+                     modoCompacto === 'compact' ? 'fas fa-compress-alt' :
+                                                  'fas fa-expand-alt';
+  }
+};
+
+function aplicarModo(modo) {
+  const grid = document.getElementById('main-monitor');
+  if (!grid) return;
+  grid.classList.remove('modo-compact', 'modo-mini');
+  if (modo === 'compact') grid.classList.add('modo-compact');
+  if (modo === 'mini')    grid.classList.add('modo-mini');
+
+  // En modo mini, alternar visibilidad de números pares
+  document.querySelectorAll('.surco-id').forEach((el, i) => {
+    const num = parseInt(el.textContent);
+    el.classList.toggle('par', num % 2 === 0);
+  });
+}
+
+// ============================================================
 // INICIALIZACIÓN DE LA INTERFAZ
-// ==========================================
+// ============================================================
 function inicializarUI() {
   if (!APP_CONFIG || !APP_CONFIG.mapeo_sensores) {
-    console.log("Esperando configuración...");
+    console.log("[VistaX] Esperando configuración...");
     return;
   }
 
   const txtMaquina = document.getElementById("txt-maquina");
   if (txtMaquina) txtMaquina.innerText = APP_CONFIG.nombre || "DESCONOCIDA";
 
-  const sensoresOrdenados = APP_CONFIG.mapeo_sensores.sort(
-    (a, b) => a.bajada - b.bajada,
-  );
+  // Prellenar objetivo si viene del config
+  const inputObjetivo = document.getElementById("input-objetivo");
+  if (inputObjetivo && APP_CONFIG.setup?.densidad_objetivo) {
+    inputObjetivo.value = APP_CONFIG.setup.densidad_objetivo;
+  }
+
+  // Mostrar botón de modo si hay suficientes surcos para que tenga sentido
+  const btnModo = document.getElementById('btn-modo');
+  if (btnModo && (window.TOTAL_SURCOS || 0) > 20) {
+    btnModo.style.display = 'flex';
+  }
+
+  // Auto-selección de modo según cantidad de surcos
+  modoCompacto = detectarModo();
+
+  const sensoresOrdenados = [...APP_CONFIG.mapeo_sensores].sort((a, b) => a.bajada - b.bajada);
 
   sensoresOrdenados.forEach((sensor) => {
-    let surcoId = `s-${sensor.tipo}-${sensor.bajada}`;
-    let colId = `surco-col-${sensor.bajada}`;
-    let isEspecial = TIPOS_ESPECIALES.hasOwnProperty(sensor.tipo);
+    const surcoId  = `s-${sensor.tipo}-${sensor.bajada}`;
+    const colId    = `surco-col-${sensor.bajada}`;
+    const isEspecial = TIPOS_ESPECIALES.hasOwnProperty(sensor.tipo);
 
     if (isEspecial) {
-      // DIBUJAR TARJETA EN EL FOOTER
       const container = document.getElementById("tren-especiales");
       if (container && !document.getElementById(surcoId)) {
-        let card = document.createElement("div");
-        card.id = surcoId;
+        const card = document.createElement("div");
+        card.id        = surcoId;
         card.className = "sensor-especial";
-        card.innerHTML = `<i class="${TIPOS_ESPECIALES[sensor.tipo].icono}"></i>
-                          <div class="info">
-                            <span>${sensor.nombre || sensor.tipo.replace("_", " ")}</span>
-                            <strong class="val-text">0.0</strong>
-                          </div>`;
+        card.innerHTML = `
+          <i class="${TIPOS_ESPECIALES[sensor.tipo].icono}"></i>
+          <div class="info">
+            <span>${sensor.nombre || sensor.tipo.replace(/_/g, ' ')}</span>
+            <strong class="val-text">—</strong>
+          </div>`;
         container.appendChild(card);
       }
     } else {
-      // DIBUJAR PASTILLA EN EL ÁREA CENTRAL
       const monitorGrid = document.getElementById("main-monitor");
-      if (monitorGrid) {
-        let numTren = sensor.tren || 1;
-        let rowId = `tren-row-${numTren}`;
-        let rowContainer = document.getElementById(rowId);
+      if (!monitorGrid) return;
 
-        // Crear el Tren si no existe
-        if (!rowContainer) {
-          let wrapper = document.createElement("div");
-          wrapper.className = "tren-row-wrapper";
-          wrapper.style.order = numTren;
-          wrapper.innerHTML = `
-            <div class="tren-title" onclick="toggleTren('${rowId}')" style="cursor: pointer; display: flex; justify-content: space-between; padding-right: 10px;">
-                <span>TREN ${numTren === 1 ? "1 (DEL.)" : "2 (TRAS.)"}</span>
-                <i class="fas fa-chevron-up"></i>
-            </div>
-            <div class="tren-row" id="${rowId}"></div>`;
-          monitorGrid.appendChild(wrapper);
-          rowContainer = document.getElementById(rowId);
-        }
+      const numTren = sensor.tren || 1;
+      const rowId   = `tren-row-${numTren}`;
+      let rowContainer = document.getElementById(rowId);
 
-        // Crear la Columna del Surco si no existe
-        let surcoCol = document.getElementById(colId);
-        if (!surcoCol) {
-          surcoCol = document.createElement("div");
-          surcoCol.id = colId;
-          surcoCol.className = "surco-column";
-          surcoCol.onclick = () =>
-            abrirDetalleSurco(sensor.bajada, sensor.tipo);
-          surcoCol.innerHTML = `<div class="surco-id">${sensor.bajada}</div><div class="pills-area"></div>`;
-          rowContainer.appendChild(surcoCol);
-        }
+      if (!rowContainer) {
+        const wrapper  = document.createElement("div");
+        wrapper.className = "tren-row-wrapper";
+        wrapper.style.order = numTren;
+        wrapper.innerHTML = `
+          <div class="tren-title" onclick="toggleTren('${rowId}')">
+            <span>TREN ${numTren === 1 ? '1 — DELANTERO' : '2 — TRASERO'}</span>
+            <i class="fas fa-chevron-up" style="font-size:9px"></i>
+          </div>
+          <div class="tren-row" id="${rowId}"></div>`;
+        monitorGrid.appendChild(wrapper);
+        rowContainer = document.getElementById(rowId);
+      }
 
-        // Agregar la Pastilla al Surco
-        const pillsArea = surcoCol.querySelector(".pills-area");
-        if (pillsArea && !document.getElementById(surcoId)) {
-          let surco = document.createElement("div");
-          surco.id = surcoId;
-          surco.className = `pill-status status-tapado`; // Inicia apagado
-          pillsArea.appendChild(surco);
-        }
+      let surcoCol = document.getElementById(colId);
+      if (!surcoCol) {
+        surcoCol           = document.createElement("div");
+        surcoCol.id        = colId;
+        surcoCol.className = "surco-column";
+        surcoCol.onclick   = () => abrirDetalleSurco(sensor.bajada, sensor.tipo);
+
+        // En modo mini, ocultar números pares
+        const numPar = sensor.bajada % 2 === 0;
+        surcoCol.innerHTML = `
+          <div class="surco-id${numPar ? ' par' : ''}">${sensor.bajada}</div>
+          <div class="pills-area"></div>`;
+        rowContainer.appendChild(surcoCol);
+      }
+
+      const pillsArea = surcoCol.querySelector(".pills-area");
+      if (pillsArea && !document.getElementById(surcoId)) {
+        const pill       = document.createElement("div");
+        pill.id          = surcoId;
+        // Clase base para colorimetría por tipo
+        const tipoClass  = sensor.tipo === 'ferti_linea'    ? 'pill-ferti-linea' :
+                           sensor.tipo === 'ferti_costado'  ? 'pill-ferti-costado' : '';
+        pill.className   = `pill-status status-tapado ${tipoClass}`.trim();
+        pill.title       = sensor.nombre || `${sensor.tipo} #${sensor.bajada}`;
+        pillsArea.appendChild(pill);
       }
     }
   });
+
+  // Aplicar modo después de construir el DOM
+  aplicarModo(modoCompacto);
 }
+
 window.toggleTren = function (rowId) {
-  const row = document.getElementById(rowId);
-  const icon = row.previousElementSibling.querySelector("i");
-  if (row.style.display === "none") {
-    row.style.display = "flex";
-    icon.className = "fas fa-chevron-up";
-  } else {
-    row.style.display = "none";
-    icon.className = "fas fa-chevron-down";
-  }
+  const row  = document.getElementById(rowId);
+  const icon = row?.previousElementSibling?.querySelector("i");
+  if (!row) return;
+  const oculto = row.style.display === "none";
+  row.style.display  = oculto ? "flex" : "none";
+  if (icon) icon.className = oculto ? "fas fa-chevron-up" : "fas fa-chevron-down";
+  if (icon) icon.style.fontSize = "9px";
 };
+
 inicializarUI();
 
-// ==========================================
+// ============================================================
 // RECEPCIÓN DE DATOS EN TIEMPO REAL
-// ==========================================
-// Variable en memoria para llevar la cuenta de cada surco individual
-let datosSurcos = {};
-
-// ==========================================
-// CAPTURA DE LOS DATOS PARA EL SURCO
-// ==========================================
+// ============================================================
 socket.on("sensor_update", (data) => {
-  // 1. Guardamos los datos estadísticos en la memoria
   if (!datosSurcos[data.bajada]) {
     datosSurcos[data.bajada] = { total_semillas: 0, spm: 0 };
   }
   datosSurcos[data.bajada].total_semillas += data.nuevas_semillas || 0;
-  datosSurcos[data.bajada].spm = data.spm || 0;
+  datosSurcos[data.bajada].spm            = data.spm || 0;
 
-  // 2. Encendemos la pastilla de la sembradora (Verde/Rojo)
   const surcoId = `s-${data.tipo}-${data.bajada}`;
-  const elemento = document.getElementById(surcoId);
-
-  if (elemento) {
-    actualizarPastillaEstado(elemento, data);
+  const el      = document.getElementById(surcoId);
+  if (el) {
+    actualizarPastillaEstado(el, data);
     if (TIPOS_ESPECIALES[data.tipo]) {
-      const valText = elemento.querySelector(".val-text");
+      const valText = el.querySelector(".val-text");
       if (valText) valText.innerText = data.valor;
     }
   }
 
-  // 3. ¡LA MAGIA EN VIVO! Si la ventanita de detalles está abierta, actualizamos los números al instante
-  const modalAbierto = document.getElementById("surco-modal-detalle");
-  if (modalAbierto && modalAbierto.style.display === "flex") {
-    // Verificamos si la ventana que está abierta es la de este surco exacto
-    if (modalAbierto.dataset.surco == data.bajada) {
-      document.getElementById("detalle-spm").innerText = data.spm;
-      document.getElementById("detalle-total").innerText =
-        datosSurcos[data.bajada].total_semillas.toLocaleString();
-    }
+  // Actualizar modal de detalle si está abierto en este surco
+  const modalDetalle = document.getElementById("surco-modal-detalle");
+  if (modalDetalle?.style.display === "flex" && modalDetalle.dataset.surco == data.bajada) {
+    const elSpm   = document.getElementById("detalle-spm");
+    const elTotal = document.getElementById("detalle-total");
+    if (elSpm)   elSpm.innerText   = data.spm;
+    if (elTotal) elTotal.innerText = datosSurcos[data.bajada].total_semillas.toLocaleString("es-AR");
   }
 });
 
-// ==========================================
-// FUNCIÓN AL TOCAR LA PASTILLA DEL SURCO
-// ==========================================
-// ==========================================
-// FUNCIÓN AL TOCAR LA PASTILLA DEL SURCO
-// ==========================================
-// ==========================================
-// FUNCIÓN AL TOCAR LA PASTILLA DEL SURCO
-// ==========================================
+// ============================================================
+// ACTUALIZACIÓN GLOBAL (GPS / velocidad)
+// ============================================================
+socket.on("global_update", (stats) => {
+  if (stats.velocidad !== undefined) {
+    const el = document.getElementById("txt-vel");
+    if (el) el.innerText = parseFloat(stats.velocidad).toFixed(1);
+  }
+  if (stats.promedio !== undefined) {
+    const el = document.getElementById("txt-dosis");
+    if (el) el.innerText = parseFloat(stats.promedio).toFixed(1);
+  }
+});
+
+// ============================================================
+// DETALLE DE SURCO — modal oscuro, touch-friendly
+// ============================================================
 window.abrirDetalleSurco = function (numero, tipo) {
-  // Obtenemos los datos del surco o ponemos 0 si aún no arrancó
   const data = datosSurcos[numero] || { total_semillas: 0, spm: 0 };
 
-  // Creamos la ventanita flotante si no existe
   let overlay = document.getElementById("surco-modal-detalle");
   if (!overlay) {
     overlay = document.createElement("div");
     overlay.id = "surco-modal-detalle";
-    overlay.style.cssText =
-      "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999;";
+    overlay.style.cssText = [
+      "position:fixed","inset:0","background:rgba(0,0,0,.75)",
+      "display:flex","align-items:center","justify-content:center","z-index:9999"
+    ].join(";");
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = "none"; };
     document.body.appendChild(overlay);
   }
 
-  // Le pegamos una etiqueta invisible a la ventana para saber a qué surco pertenece
   overlay.dataset.surco = numero;
 
-  // Llenamos la ventana con los datos actualizados (¡AQUÍ ESTÁN LOS IDs QUE FALTABAN!)
+  const objetivo = APP_CONFIG?.setup?.densidad_objetivo || 16;
+  const spm      = parseFloat(data.spm) || 0;
+  const pct      = objetivo > 0 ? Math.min((spm / objetivo) * 100, 200) : 0;
+  const color    = spm === 0        ? '#ff1744' :
+                   pct < 70         ? '#ffb300' :
+                   pct > 130        ? '#00e5ff' : '#00e676';
+
   overlay.innerHTML = `
-    <div style="background: white; padding: 25px; border-radius: 12px; min-width: 280px; text-align: center; border: 3px solid #0d6efd; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-        <h2 style="margin-top:0; color: #0d6efd; font-weight: bold;">🌱 Surco ${numero}</h2>
-        <p style="color: #666; font-size: 0.9rem; text-transform: uppercase;">${tipo.replace("_", " ")}</p>
-        <hr>
-        <div style="margin: 20px 0;">
-            <p style="font-size: 1.1rem; margin-bottom: 5px;">Densidad Actual:</p>
-            <p style="font-size: 2rem; font-weight: bold; color: #28a745; margin: 0;">
-                <span id="detalle-spm">${data.spm}</span> <span style="font-size: 1rem; color: #333;">s/m</span>
-            </p>
+    <div style="
+      background:#141414;border:1px solid #2a2a2a;border-radius:10px;
+      min-width:260px;max-width:300px;overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,.8);
+    ">
+      <div style="background:#1e1e1e;padding:14px 18px;border-bottom:1px solid #222;
+                  display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
+            ${tipo.replace(/_/g,' ')}
+          </div>
+          <div style="font-size:18px;font-weight:900;color:white;">SURCO ${numero}</div>
         </div>
-        <div style="margin: 20px 0; background: #f8f9fa; padding: 10px; border-radius: 8px;">
-            <p style="font-size: 1rem; margin-bottom: 5px; color: #555;">Total Acumulado:</p>
-            <p id="detalle-total" style="font-size: 1.5rem; font-weight: bold; margin: 0; color: #555;">${data.total_semillas.toLocaleString()}</p>
+        <button onclick="document.getElementById('surco-modal-detalle').style.display='none'"
+                style="background:transparent;border:none;color:#555;font-size:24px;cursor:pointer;line-height:1;">
+          &times;
+        </button>
+      </div>
+
+      <div style="padding:18px;">
+        <div style="text-align:center;margin-bottom:16px;">
+          <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:6px;">
+            Densidad Actual
+          </div>
+          <div id="detalle-spm" style="font-size:48px;font-weight:900;color:${color};line-height:1;">
+            ${spm}
+          </div>
+          <div style="font-size:13px;color:#444;">semillas / metro</div>
         </div>
-        <button onclick="document.getElementById('surco-modal-detalle').style.display='none'" style="margin-top: 10px; padding: 10px 30px; background: #dc3545; color: white; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-size: 1.1rem; width: 100%;">Cerrar</button>
+
+        <div style="background:#0a0a0a;border-radius:4px;overflow:hidden;height:6px;margin-bottom:16px;">
+          <div style="height:100%;width:${Math.min(pct,100)}%;background:${color};
+                      transition:width .3s;border-radius:4px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:9px;color:#333;margin-bottom:16px;">
+          <span>0</span><span>Objetivo: ${objetivo}</span><span>${objetivo * 2}</span>
+        </div>
+
+        <div style="background:#0a0a0a;border:1px solid #1e1e1e;border-radius:6px;
+                    padding:12px;text-align:center;">
+          <div style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:4px;">
+            Total acumulado en lote
+          </div>
+          <div id="detalle-total" style="font-size:22px;font-weight:700;color:#ccc;">
+            ${data.total_semillas.toLocaleString("es-AR")}
+          </div>
+        </div>
+      </div>
     </div>
   `;
 
-  // Mostramos el modal
   overlay.style.display = "flex";
 };
 
-// Función centralizada para colorear las pastillas
-function actualizarPastillaEstado(elemento, data) {
+// ============================================================
+// LÓGICA DE ALERTAS Y COLORES DE PASTILLA
+// ============================================================
+function actualizarPastillaEstado(el, data) {
   const surcoCol = document.getElementById(`surco-col-${data.bajada}`);
-  const surcoId = elemento.id;
+  const surcoId  = el.id;
 
-  // Limpiar clases anteriores
-  elemento.classList.remove("status-ok", "status-alerta", "status-tapado");
+  // Preservar clases de tipo (ferti)
+  const tipoClass = el.classList.contains('pill-ferti-linea')   ? 'pill-ferti-linea' :
+                    el.classList.contains('pill-ferti-costado') ? 'pill-ferti-costado' : '';
+
+  el.classList.remove("status-ok", "status-alerta", "status-tapado");
 
   if (data.alerta) {
-    elemento.classList.add("status-alerta");
+    el.classList.add("status-alerta");
     fallasActivas.add(surcoId);
-    if (surcoCol) surcoCol.classList.add("falla");
     surcosConFalla.add(data.bajada);
-  } else if (data.valor > 0) {
-    elemento.classList.add("status-ok");
+    if (surcoCol) surcoCol.classList.add("falla");
+  } else if (parseFloat(data.valor) > 0) {
+    el.classList.add("status-ok");
     fallasActivas.delete(surcoId);
-    if (surcoCol) surcoCol.classList.remove("falla");
     surcosConFalla.delete(data.bajada);
+    if (surcoCol) surcoCol.classList.remove("falla");
   } else {
-    elemento.classList.add("status-tapado");
+    el.classList.add("status-tapado");
     fallasActivas.delete(surcoId);
-    if (surcoCol) surcoCol.classList.remove("falla");
     surcosConFalla.delete(data.bajada);
+    if (surcoCol) surcoCol.classList.remove("falla");
   }
 
-  // Actualizar Ticker y KPI de Fallas
+  // Ticker de alertas
   const ticker = document.getElementById("alert-ticker");
   if (ticker) {
     if (surcosConFalla.size > 0) {
-      ticker.innerText = `FALLA EN SURCO ${[...surcosConFalla].sort((a, b) => a - b).join(", ")}`;
+      const lista = [...surcosConFalla].sort((a, b) => a - b).join(", ");
+      ticker.innerText = `FALLA EN SURCO ${lista}`;
       ticker.classList.add("active-alert");
     } else {
       ticker.innerText = "SISTEMA VISTAX OPERATIVO";
@@ -284,71 +381,113 @@ function actualizarPastillaEstado(elemento, data) {
 
   const kpiFallas = document.getElementById("kpi-fallas");
   if (kpiFallas) kpiFallas.innerText = fallasActivas.size;
+
   gestionarSonidoAlarma();
 }
 
-// ==========================================
-// ACTUALIZACIÓN GLOBAL (GPS)
-// ==========================================
-socket.on("global_update", (stats) => {
-  if (stats.velocidad !== undefined) {
-    const txtVel = document.getElementById("txt-vel");
-    if (txtVel) txtVel.innerText = stats.velocidad.toFixed(1);
-  }
-  if (stats.promedio !== undefined) {
-    const kpiAvg = document.getElementById("kpi-avg");
-    if (kpiAvg) kpiAvg.innerText = stats.promedio;
-  }
-});
-
-function abrirDetalleSurco(numero, tipo) {
-  console.log(`Abriendo detalle del surco ${numero} (${tipo})`);
-}
-
-window.guardarObjetivoRapido = async function (nuevoValor) {
-  if (!APP_CONFIG || !APP_CONFIG.id) return;
-
-  // Actualizar variable en memoria
+// ============================================================
+// KPI OBJETIVO — guardado silencioso
+// ============================================================
+window.guardarObjetivoRapido = async function (val) {
+  if (!APP_CONFIG) return;
   if (!APP_CONFIG.setup) APP_CONFIG.setup = {};
-  APP_CONFIG.setup.densidad_objetivo = parseFloat(nuevoValor);
+  APP_CONFIG.setup.densidad_objetivo = parseFloat(val);
 
-  // Guardado silencioso en el backend
   try {
     await fetch("/api/config/maquinas/guardar", {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(APP_CONFIG),
+      body:    JSON.stringify(APP_CONFIG),
     });
+    const inp = document.getElementById("input-objetivo");
+    if (inp) {
+      inp.style.backgroundColor = "var(--accent)";
+      inp.style.color            = "#000";
+      setTimeout(() => { inp.style.backgroundColor = "#111"; inp.style.color = "var(--accent)"; }, 400);
+    }
+  } catch (e) { console.error("Error guardando objetivo", e); }
+};
 
-    // Destello verde para avisarle al operario que se guardó
-    const input = document.getElementById("input-objetivo");
-    input.style.backgroundColor = "var(--accent)";
-    input.style.color = "#000";
-    setTimeout(() => {
-      input.style.backgroundColor = "#111";
-      input.style.color = "var(--accent)";
-    }, 300);
-  } catch (e) {
-    console.error("Error guardando objetivo", e);
+// ============================================================
+// GESTIÓN DE LOTE DESDE EL MONITOR PRINCIPAL
+// ============================================================
+window.abrirModalLote = function () {
+  document.getElementById("modal-lote").style.display = "flex";
+};
+
+window.cerrarModalLote = function () {
+  document.getElementById("modal-lote").style.display = "none";
+};
+
+window.iniciarLoteDesdeMonitor = async function () {
+  const nombre  = document.getElementById("lote-inp-nombre")?.value.trim();
+  const cultivo = document.getElementById("lote-inp-cultivo")?.value;
+  const ancho   = APP_CONFIG?.setup?.distancia_entre_surcos || 0.191;
+
+  if (!nombre) {
+    const inp = document.getElementById("lote-inp-nombre");
+    if (inp) inp.style.borderColor = "var(--danger)";
+    return;
+  }
+
+  const res = await fetch("/api/mapa/iniciar", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify({ nombre, cultivo, anchoPasada: ancho }),
+  });
+
+  if (res.ok) {
+    cerrarModalLote();
+    // Actualizar footer sin reload
+    const txt = document.getElementById("txt-lote");
+    if (txt) txt.innerText = nombre.toUpperCase();
+    const info = document.getElementById("lote-info-footer");
+    if (info) info.classList.add("activo");
+    _mostrarToastMonitor(`Lote "${nombre}" iniciado`);
   }
 };
 
-// ==========================================
-// DETECCIÓN DE NUEVOS NODOS (AUTO-REGISTRO)
-// ==========================================
+window.cerrarLoteDesdeMonitor = async function () {
+  if (!confirm("¿Cerrás el lote activo?")) return;
+  const res = await fetch("/api/mapa/cerrar", { method: "POST" });
+  if (res.ok) {
+    cerrarModalLote();
+    const txt = document.getElementById("txt-lote");
+    if (txt) txt.innerText = "SIN LOTE — INICIAR";
+    const info = document.getElementById("lote-info-footer");
+    if (info) info.classList.remove("activo");
+    _mostrarToastMonitor("Lote cerrado. GeoJSON exportado.");
+  }
+};
+
+function _mostrarToastMonitor(msg) {
+  let t = document.getElementById("_vistax_toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "_vistax_toast";
+    t.style.cssText = [
+      "position:fixed","bottom:70px","left:50%","transform:translateX(-50%) translateY(40px)",
+      "background:#1e1e1e","border:1px solid var(--accent)","border-radius:6px",
+      "padding:10px 18px","font-size:12px","color:var(--accent)","z-index:9998",
+      "opacity:0","transition:all .3s","pointer-events:none","white-space:nowrap"
+    ].join(";");
+    document.body.appendChild(t);
+  }
+  t.innerText = msg;
+  t.style.opacity   = "1";
+  t.style.transform = "translateX(-50%) translateY(0)";
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => {
+    t.style.opacity   = "0";
+    t.style.transform = "translateX(-50%) translateY(40px)";
+  }, 3000);
+}
+
+// ============================================================
+// AUTO-REGISTRO DE NODOS NUEVOS
+// ============================================================
 socket.on("new_node_detected", (nodoData) => {
-  console.log("--> LLEGÓ AL NAVEGADOR EL EVENTO DEL NODO: ", nodoData); // Agregamos esto para espiar
-
-  // Evitamos repeticiones (COMENTADO TEMPORALMENTE PARA PROBAR)
-  // if (window.ultimoNodoDetectado === nodoData.uid) return;
-  // window.ultimoNodoDetectado = nodoData.uid;
-
-  // Llamamos directamente a la función que abre el modal sin preguntar
   if (typeof window.prepararNuevoNodo === "function") {
     window.prepararNuevoNodo(nodoData);
-  } else {
-    console.error(
-      "🚨 ERROR: No se encontró la función prepararNuevoNodo en config.js",
-    );
   }
 });

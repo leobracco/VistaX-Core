@@ -1,24 +1,57 @@
 <header class="vistax-header">
   <div class="brand">
     <span class="logo">VistaX</span>
-    <span class="v-status" id="mqtt-status">ONLINE</span>
+    <span class="v-status" id="txt-maquina">CARGANDO...</span>
   </div>
+
   <div class="kpi-container">
     <div class="kpi">
       <small>VELOCIDAD</small>
       <div><span id="txt-vel">0.0</span> <small>km/h</small></div>
     </div>
     <div class="kpi">
-      <small>PROMEDIO</small>
-      <div><span id="txt-avg">0.0</span> <small>s/m</small></div>
+      <small>OBJETIVO</small>
+      <div style="display:flex;align-items:center;justify-content:center;">
+        <input type="number" id="input-objetivo"
+               value="<%= config && config.setup && config.setup.densidad_objetivo ? config.setup.densidad_objetivo : 16 %>"
+               class="kpi-input"
+               onchange="guardarObjetivoRapido(this.value)"
+               title="Objetivo de semillas por metro"/>
+      </div>
     </div>
     <div class="kpi">
-      <small>DOSIS</small>
-      <div><span id="txt-dosis">0.0</span> <small>kg/ha</small></div>
+      <small>S/M PROM.</small>
+      <div><span id="txt-dosis">0.0</span></div>
     </div>
     <div class="kpi">
-      <small>BATERÍA</small>
-      <div><span id="txt-bat">13.8</span> <small>V</small></div>
+      <small>FALLAS</small>
+      <div><strong id="kpi-fallas" style="color:var(--danger)">0</strong></div>
     </div>
+  </div>
+
+  <div class="status-info">
+    <%# Indicador de lote activo %>
+    <% if (typeof loteActivo !== 'undefined' && loteActivo && loteActivo.id) { %>
+      <div class="lote-activo-badge" title="Lote en curso">
+        <span class="rec-dot"></span>
+        <span class="lote-nombre-badge"><%= loteActivo.nombre %></span>
+      </div>
+    <% } %>
+
+    <%# Botón modo compacto (se activa si hay muchos surcos) %>
+    <button class="btn-tool" id="btn-modo" onclick="toggleModoCompacto()"
+            title="Alternar vista compacta" style="display:none">
+      <i class="fas fa-compress-alt"></i>
+    </button>
+
+    <a href="/mapa" class="btn-tool" title="Ver mapa de siembra">
+      <i class="fas fa-map-marked-alt"></i>
+    </a>
+
+    <div class="status-dot online" id="status-dot"></div>
+
+    <button class="btn-tool" onclick="abrirModal()" title="Configuración">
+      <i class="fas fa-cog"></i>
+    </button>
   </div>
 </header>

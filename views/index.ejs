@@ -2,90 +2,35 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>VistaX - Monitor de Siembra (Modo Apaisado)</title>
+    <title>VistaX - Monitor de Siembra</title>
     <link rel="stylesheet" href="/css/all.min.css" />
     <link rel="stylesheet" href="/css/vistax.css" />
   </head>
   <body>
     <div class="vistax-app">
-      <header class="vistax-header">
-        <div class="brand">
-          <span class="logo">VistaX</span>
-          <span class="v-status" id="txt-maquina">CARGANDO...</span>
-        </div>
-        <div class="kpi-container">
-          <div class="kpi">
-            <small>VELOCIDAD</small>
-            <div><span id="txt-vel">0.0</span> <small>km/h</small></div>
-          </div>
-
-          <div class="kpi">
-            <small>OBJETIVO</small>
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              "
-            >
-              <input
-                type="number"
-                id="input-objetivo"
-                value="16"
-                class="kpi-input"
-                onchange="guardarObjetivoRapido(this.value)"
-                title="Escribí acá tu objetivo de flujo"
-              />
-            </div>
-          </div>
-
-          <div class="kpi">
-            <small>FLUJO ACTUAL</small>
-            <div><span id="txt-dosis">0.0</span></div>
-          </div>
-
-          <div class="kpi" style="border-right: none">
-            <small>FALLAS</small>
-            <div>
-              <strong style="color: var(--danger)" id="kpi-fallas">0</strong>
-            </div>
-          </div>
-        </div>
-        <div class="status-info">
-          <div class="status-dot online" id="status-dot"></div>
-          <button class="btn-config" onclick="abrirModal()">
-            <i class="fas fa-cog"></i>
-          </button>
-        </div>
-      </header>
+      <%- include('partials/header') %>
 
       <main class="monitor-wrapper">
         <div class="monitor-grid" id="main-monitor"></div>
       </main>
 
-      <footer class="vistax-footer">
-        <div class="lote-info">
-          <i class="fas fa-map-marker-alt"></i> LOTE: SIN INICIAR
-        </div>
-        <div class="alert-ticker" id="alert-ticker">
-          SISTEMA VISTAX OPERATIVO
-        </div>
-        <div class="especiales-container" id="tren-especiales"></div>
-      </footer>
+      <%- include('partials/footer') %>
     </div>
 
     <%- include('partials/config_modal') %>
 
     <script>
-      window.APP_CONFIG = <%- JSON.stringify(config || {}) %>;
+      window.APP_CONFIG    = <%- JSON.stringify(config || {}) %>;
+      window.LOTE_ACTIVO   = <%- JSON.stringify(loteActivo || null) %>;
+      <%# Calculamos la cantidad de surcos de semilla para elegir modo de render %>
+      window.TOTAL_SURCOS  = <%- (config && config.mapeo_sensores) ? config.mapeo_sensores.filter(s => s.tipo === 'semilla' || s.tipo === 'ferti_linea' || s.tipo === 'ferti_costado').length : 0 %>;
     </script>
-    <script src="/socket.io/socket.io.js?v=2"></script>
-    <script src="/js/render_engine.js?v=2"></script>
-    <script src="/js/config_modal.js?v=2"></script>
+    <script src="/socket.io/socket.io.js?v=3"></script>
+    <script src="/js/render_engine.js?v=3"></script>
+    <script src="/js/config_modal.js?v=3"></script>
   </body>
 </html>
