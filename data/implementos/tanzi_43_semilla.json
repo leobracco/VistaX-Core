@@ -1,0 +1,128 @@
+{
+  "id": "tanzi_43_semilla",
+  "nombre": "Tanzi 43 Surcos (2 Trenes)",
+  "setup": {
+    "distancia_entre_surcos": 0.191,
+    "factor_k_default": 0.15,
+    "p1000": 180,
+    "rpm_min": 2000,
+    "rpm_max": 5000,
+    "tolvas": 2,
+    "velocidad_max": 8.5,
+    "alarma_tiempo_seg": 2
+  },
+  "mapeo_sensores": [
+    {
+      "uid": "VX-E5A1DF7C",
+      "cable": 1,
+      "bajada": 1,
+      "tipo": "semilla",
+      "nombre": "S1",
+      "tren": 2
+    },
+    {
+      "uid": "VX-E5A1DF7C",
+      "cable": 2,
+      "bajada": 2,
+      "tipo": "semilla",
+      "nombre": "S2",
+      "tren": 2
+    },
+    {
+      "uid": "VX-E5A1DF7C",
+      "cable": 3,
+      "bajada": 3,
+      "tipo": "semilla",
+      "nombre": "S3",
+      "tren": 2
+    },
+    {
+      "uid": "VX-E5A1DF7C",
+      "cable": 4,
+      "bajada": 4,
+      "tipo": "semilla",
+      "nombre": "S4",
+      "tren": 2
+    },
+    {
+      "uid": "VX-E5A1DF7C",
+      "cable": 5,
+      "bajada": 5,
+      "tipo": "semilla",
+      "nombre": "S5",
+      "tren": 2
+    },
+    {
+      "uid": "VX-E5A1DF7C",
+      "cable": 6,
+      "bajada": 6,
+      "tipo": "semilla",
+      "nombre": "S6",
+      "tren": 2
+    },
+    {
+      "uid": "VX-E5A1DF7C",
+      "cable": 7,
+      "bajada": 7,
+      "tipo": "semilla",
+      "nombre": "S7",
+      "tren": 2
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 1,
+      "bajada": 8,
+      "tipo": "semilla",
+      "nombre": "S8",
+      "tren": 2
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 2,
+      "bajada": 9,
+      "tipo": "semilla",
+      "nombre": "S9",
+      "tren": 2
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 3,
+      "bajada": 10,
+      "tipo": "semilla",
+      "nombre": "S10",
+      "tren": 2
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 4,
+      "bajada": 11,
+      "tipo": "semilla",
+      "nombre": "S11",
+      "tren": 2
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 5,
+      "bajada": 12,
+      "tipo": "semilla",
+      "nombre": "S12",
+      "tren": 2
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 6,
+      "bajada": 13,
+      "tipo": "semilla",
+      "nombre": "S13",
+      "tren": 2
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 7,
+      "bajada": 14,
+      "tipo": "semilla",
+      "nombre": "S14",
+      "tren": 2
+    }
+  ]
+}

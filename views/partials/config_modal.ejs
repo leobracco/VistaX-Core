@@ -1,0 +1,228 @@
+<div id="modal-config" class="modal-overlay">
+  <div class="modal-content config-fullscreen">
+    <div class="modal-header">
+      <div class="header-title">
+        <i class="fas fa-tools"></i>
+        <div>
+          <h2>CONFIGURACIÓN DEL IMPLEMENTO</h2>
+          <small id="cfg-id-maquina">ID: tanzi_43_semilla</small>
+        </div>
+      </div>
+      <button class="close-btn" onclick="cerrarModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="config-layout">
+        <aside class="config-sidebar">
+          <div class="sidebar-nav">
+            <button class="tab-btn active" onclick="switchTab('general')">
+              <i class="fas fa-sliders-h"></i> <span>General</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('sensores')">
+              <i class="fas fa-microchip"></i> <span>Sensores</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('mapeo')">
+              <i class="fas fa-project-diagram"></i> <span>Mapeo Visual</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('pantalla')">
+              <i class="fas fa-desktop"></i> <span>Pantalla y Sonido</span>
+            </button>
+          </div>
+
+          <div class="sidebar-info">
+            <label>Máquina Actual</label>
+            <select id="select-maquina-archivo" class="config-select-main">
+              <option value="tanzi_43_semilla.json">
+                tanzi_43_semilla.json
+              </option>
+            </select>
+          </div>
+        </aside>
+
+        <section class="config-main">
+          <div id="tab-general" class="tab-content active">
+            <div class="section-header">
+              <h3>Estructura de la Sembradora</h3>
+              <p>Parámetros base para el cálculo de semillas y dosis.</p>
+            </div>
+
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Nombre del Implemento</label>
+                <input type="text" id="cfg-nombre" placeholder="Ej: Tanzi 43" />
+              </div>
+              <div class="input-card">
+                <label>Factor K (Pulsos/Semilla)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  id="cfg-k"
+                  placeholder="0.15"
+                />
+              </div>
+              <div class="input-card">
+                <label>Distancia entre Líneas (m)</label>
+                <input
+                  type="number"
+                  step="0.001"
+                  id="cfg-distancia"
+                  placeholder="0.191"
+                />
+              </div>
+              <div class="input-card">
+                <label>Peso de 1000 semillas (g)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  id="cfg-p1000"
+                  placeholder="Ej: 180"
+                />
+              </div>
+              <div class="input-card">
+                <label>RPM Turbina (Mínimo)</label>
+                <input type="number" id="cfg-rpm-min" placeholder="2500" />
+              </div>
+              <div class="input-card">
+                <label>RPM Turbina (Máximo)</label>
+                <input type="number" id="cfg-rpm-max" placeholder="4500" />
+              </div>
+            </div>
+
+            <div class="section-header" style="margin-top: 20px">
+              <h3>Configuración de Tolvas</h3>
+            </div>
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Cantidad de Tolvas</label>
+                <input type="number" id="cfg-qty-tolvas" value="2" />
+              </div>
+            </div>
+          </div>
+
+          <div id="tab-sensores" class="tab-content" style="display: none">
+            <div
+              class="table-header-actions"
+              style="flex-wrap: wrap; gap: 15px"
+            >
+              <div style="flex: 1; min-width: 250px">
+                <label
+                  style="
+                    color: var(--accent);
+                    font-size: 10px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    display: block;
+                    margin-bottom: 5px;
+                  "
+                >
+                  Viendo configuración del Nodo:
+                </label>
+                <div style="display: flex; gap: 10px">
+                  <select
+                    id="select-nodo-filter"
+                    class="config-select-main"
+                    onchange="cambiarNodo()"
+                  ></select>
+                  <button
+                    class="btn-cancel"
+                    style="padding: 8px 15px"
+                    onclick="agregarNuevoNodo()"
+                  >
+                    + NODO
+                  </button>
+                </div>
+              </div>
+              <button class="btn-action-add" onclick="agregarFilaSensor()">
+                <i class="fas fa-plus"></i> AGREGAR CABLE
+              </button>
+            </div>
+
+            <div class="mapeo-container table-scroll">
+              <table class="config-table">
+                <thead>
+                  <tr>
+                    <th>CABLE PIN (1-7)</th>
+                    <th>BAJADA / SURCO #</th>
+                    <th>TREN</th>
+                    <th>TIPO DE SENSOR</th>
+                    <th style="text-align: center">ACCIÓN</th>
+                  </tr>
+                </thead>
+                <tbody id="lista-sensores-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="tab-mapeo" class="tab-content" style="display: none">
+            <div class="section-header">
+              <h3>Distribución en Planta</h3>
+              <p>
+                Verificación visual de la numeración de los surcos y trenes.
+              </p>
+            </div>
+            <div id="mapeo-visual-canvas" class="mapeo-visual-canvas"></div>
+          </div>
+
+          <div id="tab-pantalla" class="tab-content" style="display: none">
+            <div class="section-header">
+              <h3>Preferencias de Interfaz</h3>
+              <p>Ajusta lo que quieres ver y escuchar en pantalla.</p>
+            </div>
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Sonido de Alerta</label>
+                <select
+                  id="cfg-audio-file"
+                  class="config-select-main"
+                  onchange="probarSonido(this.value)"
+                >
+                  <option value="/sounds/alarma1.mp3">Beep Corto</option>
+                  <option value="/sounds/sirena.mp3">Sirena Continua</option>
+                  <option value="/sounds/buzzer.mp3">Buzzer Grave</option>
+                </select>
+              </div>
+              <div class="input-card">
+                <label>Panel Superior (Velocidad, Dosis)</label>
+                <select
+                  class="config-select-main"
+                  onchange="
+                    document.querySelector('.vistax-header').style.display =
+                      this.value
+                  "
+                >
+                  <option value="flex">Visible</option>
+                  <option value="none">Oculto</option>
+                </select>
+              </div>
+              <div class="input-card">
+                <label>Panel Especiales (Turbinas, Ejes)</label>
+                <select
+                  class="config-select-main"
+                  onchange="
+                    document.getElementById('tren-especiales').style.display =
+                      this.value
+                  "
+                >
+                  <option value="flex">Visible</option>
+                  <option value="none">Oculto</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-footer btn-cancel" onclick="cerrarModal()">
+        <i class="fas fa-times"></i> DESCARTAR
+      </button>
+      <button
+        class="btn-footer btn-save"
+        onclick="guardarConfiguracionCompleta()"
+      >
+        <i class="fas fa-save"></i> GUARDAR Y APLICAR
+      </button>
+    </div>
+  </div>
+</div>

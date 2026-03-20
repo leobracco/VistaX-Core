@@ -1,0 +1,398 @@
+{
+  "id": "tanzi_43_semilla",
+  "nombre": "Tanzi 43 Surcos (2 Trenes)",
+  "setup": {
+    "distancia_entre_surcos": 0.191,
+    "factor_k_default": 0.15,
+    "velocidad_max": 8.5,
+    "alarma_tiempo_seg": 2
+  },
+  "mapeo_sensores": [
+    {
+      "uid": "VX-A1",
+      "cable": 1,
+      "bajada": 1,
+      "tipo": "semilla",
+      "nombre": "S1",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A1",
+      "cable": 2,
+      "bajada": 2,
+      "tipo": "semilla",
+      "nombre": "S2",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A1",
+      "cable": 3,
+      "bajada": 3,
+      "tipo": "semilla",
+      "nombre": "S3",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A1",
+      "cable": 4,
+      "bajada": 4,
+      "tipo": "semilla",
+      "nombre": "S4",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A1",
+      "cable": 5,
+      "bajada": 5,
+      "tipo": "semilla",
+      "nombre": "S5",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A1",
+      "cable": 6,
+      "bajada": 6,
+      "tipo": "semilla",
+      "nombre": "S6",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A1",
+      "cable": 7,
+      "bajada": 7,
+      "tipo": "semilla",
+      "nombre": "S7",
+      "tren": 2
+    },
+
+    {
+      "uid": "VX-A2",
+      "cable": 1,
+      "bajada": 8,
+      "tipo": "semilla",
+      "nombre": "S8",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A2",
+      "cable": 2,
+      "bajada": 9,
+      "tipo": "semilla",
+      "nombre": "S9",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A2",
+      "cable": 3,
+      "bajada": 10,
+      "tipo": "semilla",
+      "nombre": "S10",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A2",
+      "cable": 4,
+      "bajada": 11,
+      "tipo": "semilla",
+      "nombre": "S11",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A2",
+      "cable": 5,
+      "bajada": 12,
+      "tipo": "semilla",
+      "nombre": "S12",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A2",
+      "cable": 6,
+      "bajada": 13,
+      "tipo": "semilla",
+      "nombre": "S13",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A2",
+      "cable": 7,
+      "bajada": 14,
+      "tipo": "semilla",
+      "nombre": "S14",
+      "tren": 2
+    },
+
+    {
+      "uid": "VX-A3",
+      "cable": 1,
+      "bajada": 15,
+      "tipo": "semilla",
+      "nombre": "S15",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A3",
+      "cable": 2,
+      "bajada": 16,
+      "tipo": "semilla",
+      "nombre": "S16",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A3",
+      "cable": 3,
+      "bajada": 17,
+      "tipo": "semilla",
+      "nombre": "S17",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A3",
+      "cable": 4,
+      "bajada": 18,
+      "tipo": "semilla",
+      "nombre": "S18",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A3",
+      "cable": 5,
+      "bajada": 19,
+      "tipo": "semilla",
+      "nombre": "S19",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A3",
+      "cable": 6,
+      "bajada": 20,
+      "tipo": "semilla",
+      "nombre": "S20",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A3",
+      "cable": 7,
+      "bajada": 21,
+      "tipo": "semilla",
+      "nombre": "S21",
+      "tren": 2
+    },
+    {
+      "uid": "VX-A4",
+      "cable": 1,
+      "bajada": 22,
+      "tipo": "semilla",
+      "nombre": "S22",
+      "tren": 2
+    },
+
+    {
+      "uid": "VX-A4",
+      "cable": 2,
+      "bajada": 23,
+      "tipo": "semilla",
+      "nombre": "S23",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A4",
+      "cable": 3,
+      "bajada": 24,
+      "tipo": "semilla",
+      "nombre": "S24",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A4",
+      "cable": 4,
+      "bajada": 25,
+      "tipo": "semilla",
+      "nombre": "S25",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A4",
+      "cable": 5,
+      "bajada": 26,
+      "tipo": "semilla",
+      "nombre": "S26",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A4",
+      "cable": 6,
+      "bajada": 27,
+      "tipo": "semilla",
+      "nombre": "S27",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A4",
+      "cable": 7,
+      "bajada": 28,
+      "tipo": "semilla",
+      "nombre": "S28",
+      "tren": 1
+    },
+
+    {
+      "uid": "VX-A5",
+      "cable": 1,
+      "bajada": 29,
+      "tipo": "semilla",
+      "nombre": "S29",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A5",
+      "cable": 2,
+      "bajada": 30,
+      "tipo": "semilla",
+      "nombre": "S30",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A5",
+      "cable": 3,
+      "bajada": 31,
+      "tipo": "semilla",
+      "nombre": "S31",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A5",
+      "cable": 4,
+      "bajada": 32,
+      "tipo": "semilla",
+      "nombre": "S32",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A5",
+      "cable": 5,
+      "bajada": 33,
+      "tipo": "semilla",
+      "nombre": "S33",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A5",
+      "cable": 6,
+      "bajada": 34,
+      "tipo": "semilla",
+      "nombre": "S34",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A5",
+      "cable": 7,
+      "bajada": 35,
+      "tipo": "semilla",
+      "nombre": "S35",
+      "tren": 1
+    },
+
+    {
+      "uid": "VX-A6",
+      "cable": 1,
+      "bajada": 36,
+      "tipo": "semilla",
+      "nombre": "S36",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A6",
+      "cable": 2,
+      "bajada": 37,
+      "tipo": "semilla",
+      "nombre": "S37",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A6",
+      "cable": 3,
+      "bajada": 38,
+      "tipo": "semilla",
+      "nombre": "S38",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A6",
+      "cable": 4,
+      "bajada": 39,
+      "tipo": "semilla",
+      "nombre": "S39",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A6",
+      "cable": 5,
+      "bajada": 40,
+      "tipo": "semilla",
+      "nombre": "S40",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A6",
+      "cable": 6,
+      "bajada": 41,
+      "tipo": "semilla",
+      "nombre": "S41",
+      "tren": 1
+    },
+    {
+      "uid": "VX-A6",
+      "cable": 7,
+      "bajada": 42,
+      "tipo": "semilla",
+      "nombre": "S42",
+      "tren": 1
+    },
+
+    {
+      "uid": "VX-A7",
+      "cable": 1,
+      "bajada": 43,
+      "tipo": "semilla",
+      "nombre": "S43",
+      "tren": 1
+    },
+
+    {
+      "uid": "VX-A7",
+      "cable": 2,
+      "bajada": 901,
+      "tipo": "rotacion_eje",
+      "nombre": "Eje D"
+    },
+    {
+      "uid": "VX-A7",
+      "cable": 3,
+      "bajada": 902,
+      "tipo": "rotacion_eje",
+      "nombre": "Eje I"
+    },
+    {
+      "uid": "VX-A7",
+      "cable": 4,
+      "bajada": 903,
+      "tipo": "turbina",
+      "nombre": "Turbina"
+    },
+    {
+      "uid": "VX-A7",
+      "cable": 5,
+      "bajada": 904,
+      "tipo": "bajada_herramienta",
+      "nombre": "Trabajo"
+    },
+    {
+      "uid": "VX-A7",
+      "cable": 6,
+      "bajada": 905,
+      "tipo": "bateria",
+      "nombre": "Batería"
+    }
+  ]
+}

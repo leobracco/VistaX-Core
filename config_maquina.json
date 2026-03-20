@@ -1,0 +1,14 @@
+{
+  "setup": {
+    "nombre_maquina": "Tanzi 48-38",
+    "distancia_entre_surcos": 0.38,
+    "peso_mil_semillas": 160,
+    "calibracion_ferti": 1200
+  },
+  "mapeo_sensores": [
+    { "uid": "VX-S3-A1", "pin": 0, "bajada": 1, "tipo": "semilla" },
+    { "uid": "VX-S3-A1", "pin": 1, "bajada": 1, "tipo": "ferti_linea" },
+    { "uid": "VX-S3-A1", "pin": 2, "bajada": 2, "tipo": "semilla" },
+    { "uid": "VX-S3-A1", "pin": 3, "bajada": 2, "tipo": "ferti_linea" }
+  ]
+}
