@@ -4,11 +4,11 @@
 // Recibe io para emitir lote_update a todos los clientes
 // ============================================================
 
-const express  = require("express");
-const path     = require("path");
-const fs       = require("fs");
+const express = require("express");
+const path = require("path");
+const fs = require("fs");
 const recorder = require("../core/logic/map_recorder");
-
+const seedRecorder = require("../core/logic/seed_recorder");
 const LOTES_DIR = path.join(__dirname, "../data/lotes");
 
 module.exports = (io) => {
@@ -34,12 +34,12 @@ module.exports = (io) => {
     }
 
     const lote = recorder.iniciarLote(nombre, cultivo, anchoPasada);
-
+    seedRecorder.iniciarLote(lote.id, nombre);
     // Notificar a todos los clientes conectados (monitor + mapa)
     io.emit("lote_update", {
-      activo:  true,
-      id:      lote.id,
-      nombre:  lote.nombre,
+      activo: true,
+      id: lote.id,
+      nombre: lote.nombre,
       cultivo: lote.cultivo,
     });
 
@@ -51,7 +51,7 @@ module.exports = (io) => {
   // ------------------------------------------------------------------
   router.post("/cerrar", (req, res) => {
     const resultado = recorder.cerrarLote();
-
+    seedRecorder.cerrarLote();
     if (!resultado) {
       return res.status(400).json({ error: "No hay lote activo" });
     }
@@ -89,7 +89,9 @@ module.exports = (io) => {
   router.get("/geojson/:loteId", (req, res) => {
     const geojson = recorder.cargarGeoJSONLote(req.params.loteId);
     if (!geojson) {
-      return res.status(404).json({ error: "Lote no encontrado o sin GeoJSON" });
+      return res
+        .status(404)
+        .json({ error: "Lote no encontrado o sin GeoJSON" });
     }
     res.json(geojson);
   });
