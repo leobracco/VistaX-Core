@@ -46,7 +46,7 @@ const mqttHandler = initMQTT(io, () => {
 // Rutas
 app.use("/api/config", configRoutes);
 app.use("/api/lotes", lotesRoutes);
-app.use("/api/mapa", mapaRoutes);
+app.use("/api/mapa", mapaRoutes(io));
 
 // Y agregar la ruta de la vista del mapa:
 app.get("/mapa", (req, res) => {
