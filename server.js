@@ -10,6 +10,7 @@ const initMQTT = require("./core/logic/mqtt_handler");
 const profilesManager = require("./core/database/profiles_manager");
 const configRoutes = require("./routes/config.routes");
 const lotesRoutes = require("./routes/lotes.routes");
+const seedsRoutes = require("./routes/seeds.routes");
 
 const iniciarSimulador = require("./simulador");
 
@@ -24,7 +25,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-
+app.use("/api/semillas", seedsRoutes(io));
 console.log(`\x1b[33m[VistaX]\x1b[0m Levantando servidor...`);
 
 // ==========================================
