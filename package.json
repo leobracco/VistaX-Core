@@ -12,10 +12,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@turf/turf": "^7.3.4",
+    "axios": "^1.13.6",
     "dotenv": "^17.3.1",
     "ejs": "^5.0.1",
     "express": "^5.2.1",
     "mqtt": "^5.15.0",
+    "multer": "^2.1.1",
     "socket.io": "^4.8.3"
   }
 }

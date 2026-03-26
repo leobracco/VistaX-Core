@@ -34,7 +34,9 @@ const MapEngine = (() => {
   let surcosCentro = 0;
   let centrado = false;
   let spmMax = 0;
-  let alertasCount = 0;
+  // FIX #3: alertasCount ahora refleja alertas ACTIVAS en el punto actual,
+  // no un acumulador que solo crece. Se recalcula en cada pintarPuntoGPS.
+  let alertasActivas = 0;
   let totalPuntos = 0;
   let trackCoords = [];
   let trackLine = null;
@@ -216,17 +218,10 @@ const MapEngine = (() => {
   // ============================================================
   function desplazarPunto(lat, lon, headingGrados, offsetMetros) {
     const R = 6371000;
-
-    // Bearing perpendicular al avance (derecha = heading + 90)
-    // En bearing geográfico: 0=Norte, 90=Este, sentido horario
-    // cos(bearing) → componente Norte (lat)
-    // sin(bearing) → componente Este (lon)
     const perpRad = (((headingGrados + 90) % 360) * Math.PI) / 180;
     const latRad = (lat * Math.PI) / 180;
-
     const dLat = (offsetMetros * Math.cos(perpRad)) / R;
     const dLon = (offsetMetros * Math.sin(perpRad)) / (R * Math.cos(latRad));
-
     return [lat + dLat * (180 / Math.PI), lon + dLon * (180 / Math.PI)];
   }
 
@@ -289,6 +284,9 @@ const MapEngine = (() => {
     const offsets = calcularOffsets();
     let spmTotal = 0,
       countSpm = 0;
+
+    // FIX #3: recalcular alertasActivas en este punto (no acumular)
+    let alertasEnEstePunto = 0;
 
     Object.values(surcos).forEach((v) => {
       const s = parseFloat(v) || 0;
@@ -361,9 +359,7 @@ const MapEngine = (() => {
       capas.surcos.addLayer(circle);
 
       if (alerta) {
-        alertasCount++;
-        const elAlertas = document.getElementById("hkpi-alertas");
-        if (elAlertas) elAlertas.textContent = alertasCount;
+        alertasEnEstePunto++;
         capas.alertas.addLayer(
           L.circleMarker([latSurco, lonSurco], {
             radius: 7,
@@ -375,6 +371,14 @@ const MapEngine = (() => {
         );
       }
     });
+
+    // FIX #3: actualizar alertas con el máximo del punto actual
+    // (evita que el contador crezca indefinidamente sin resetear)
+    if (alertasEnEstePunto > 0) {
+      alertasActivas = Math.max(alertasActivas, alertasEnEstePunto);
+      const elAlertas = document.getElementById("hkpi-alertas");
+      if (elAlertas) elAlertas.textContent = alertasActivas;
+    }
 
     // Seguimiento GPS
     ultimaPosicion = [latGPS, lonGPS];
@@ -405,10 +409,26 @@ const MapEngine = (() => {
     trackLine = null;
     centrado = false;
     spmMax = 0;
-    alertasCount = 0;
+    // FIX #2: también actualizar el DOM al resetear
+    alertasActivas = 0;
     totalPuntos = 0;
     siguiendoGPS = true;
     ultimaPosicion = null;
+
+    // Actualizar KPIs del header del mapa
+    const elAlertas = document.getElementById("hkpi-alertas");
+    const elPts = document.getElementById("hkpi-pts");
+    const elSpm = document.getElementById("hkpi-spm");
+    const elHa = document.getElementById("hkpi-ha");
+    const elMax = document.getElementById("leg-max");
+    const elMid = document.getElementById("leg-mid");
+    if (elAlertas) elAlertas.textContent = "0";
+    if (elPts)     elPts.textContent = "0";
+    if (elSpm)     elSpm.textContent = "—";
+    if (elHa)      elHa.textContent = "— ha";
+    if (elMax)     elMax.textContent = "óptimo+";
+    if (elMid)     elMid.textContent = "—";
+
     if (btnSeguir) {
       btnSeguir.style.color = "var(--accent)";
       btnSeguir.style.borderColor = "#1a5c35";

@@ -426,3 +426,280 @@ window.prepararNuevoNodo = function (nodoData) {
     `🚜 ¡Se detectó el nodo ${nodoData.uid}!\nPor favor, asígnale el "Nº de Bajada" a cada cable y haz clic en Guardar Configuración.`,
   );
 };
+
+// ══════════════════════════════════════════════════════════
+// AGREGAR al final de public/js/config_modal.js
+// ══════════════════════════════════════════════════════════
+
+// ── OTA: Abrir modal ──────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// REEMPLAZA el bloque OTA en public/js/config_modal.js
+// ══════════════════════════════════════════════════════════
+
+// ── Abrir modal ───────────────────────────────────────────
+function abrirModalOTA() {
+  const overlay = document.getElementById("modal-ota-overlay");
+  if (!overlay) return;
+
+  document.getElementById("ota-uid-display").textContent =
+    nodoActual || "— sin nodo —";
+  document.getElementById("ota-status").style.display = "none";
+  document.getElementById("ota-upload-status").textContent = "";
+  document.getElementById("btn-enviar-ota").disabled = false;
+  document.getElementById("btn-enviar-ota").textContent =
+    "⬆ Enviar OTA al nodo";
+
+  overlay.style.display = "flex";
+  cargarFirmwares();
+}
+
+// ── Cerrar modal ──────────────────────────────────────────
+function cerrarModalOTA() {
+  const overlay = document.getElementById("modal-ota-overlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+// ── Cargar lista de firmwares desde el servidor ───────────
+async function cargarFirmwares() {
+  const select = document.getElementById("ota-firmware-select");
+  const infoDiv = document.getElementById("ota-firmware-info");
+  select.innerHTML = '<option value="">Cargando...</option>';
+  infoDiv.textContent = "";
+
+  try {
+    const res = await fetch("/api/firmware");
+    const data = await res.json();
+
+    if (!data.ok || data.firmwares.length === 0) {
+      select.innerHTML =
+        '<option value="">— Sin firmwares disponibles —</option>';
+      infoDiv.textContent = "Subí un archivo VX-*.bin para habilitar el envío.";
+      infoDiv.style.color = "#555";
+      return;
+    }
+
+    select.innerHTML = data.firmwares
+      .map((f) => {
+        const kb = (f.size / 1024).toFixed(1);
+        const date = new Date(f.fecha).toLocaleDateString("es-AR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+        return `<option value="${f.filename}" data-version="${f.version}" data-size="${kb}" data-date="${date}">
+        VX-${f.version}.bin — ${kb} KB
+      </option>`;
+      })
+      .join("");
+
+    // Mostrar info del primer item
+    actualizarInfoFirmware();
+
+    select.onchange = actualizarInfoFirmware;
+  } catch (e) {
+    select.innerHTML = '<option value="">Error cargando lista</option>';
+    infoDiv.textContent = "No se pudo conectar con el servidor.";
+    infoDiv.style.color = "#ff1744";
+  }
+}
+
+// ── Info del firmware seleccionado ────────────────────────
+function actualizarInfoFirmware() {
+  const select = document.getElementById("ota-firmware-select");
+  const infoDiv = document.getElementById("ota-firmware-info");
+  const opt = select.options[select.selectedIndex];
+  if (!opt?.value) {
+    infoDiv.textContent = "";
+    return;
+  }
+
+  infoDiv.textContent = `Versión: ${opt.dataset.version}  ·  Tamaño: ${opt.dataset.size} KB  ·  Subido: ${opt.dataset.date}`;
+  infoDiv.style.color = "#666";
+}
+
+// ── Drag & drop ───────────────────────────────────────────
+function handleFirmwareDrop(event) {
+  event.preventDefault();
+  const dropzone = document.getElementById("ota-dropzone");
+  dropzone.style.borderColor = "#333";
+  dropzone.style.background = "transparent";
+
+  const file = event.dataTransfer.files[0];
+  if (file) subirFirmware(file);
+}
+
+// ── Subir firmware al servidor ────────────────────────────
+async function subirFirmware(file) {
+  if (!file) return;
+
+  const statusDiv = document.getElementById("ota-upload-status");
+  const progressWrap = document.getElementById("ota-progress-bar-wrap");
+  const progressBar = document.getElementById("ota-progress-bar");
+
+  // Validar en cliente
+  if (!file.name.endsWith(".bin")) {
+    statusDiv.textContent = "❌ Solo se aceptan archivos .bin";
+    statusDiv.style.color = "#ff1744";
+    return;
+  }
+  if (!file.name.startsWith("VX-")) {
+    statusDiv.textContent =
+      "❌ El nombre debe comenzar con VX- (ej: VX-1.2.0.bin)";
+    statusDiv.style.color = "#ff1744";
+    return;
+  }
+  if (file.size > 4 * 1024 * 1024) {
+    statusDiv.textContent = "❌ Archivo muy grande (máx 4MB)";
+    statusDiv.style.color = "#ff1744";
+    return;
+  }
+
+  // Subida con progreso via XHR (fetch no tiene progress nativo)
+  statusDiv.textContent = `Subiendo ${file.name}...`;
+  statusDiv.style.color = "#ffea00";
+  progressWrap.style.display = "block";
+  progressBar.style.width = "0%";
+
+  const formData = new FormData();
+  formData.append("firmware", file);
+
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = pct + "%";
+      }
+    };
+
+    xhr.onload = async () => {
+      progressWrap.style.display = "none";
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (data.ok) {
+          statusDiv.textContent = `✅ ${data.filename} subido correctamente`;
+          statusDiv.style.color = "#00e676";
+          await cargarFirmwares();
+          // Seleccionar automáticamente el recién subido
+          const select = document.getElementById("ota-firmware-select");
+          for (const opt of select.options) {
+            if (opt.value === data.filename) {
+              select.value = data.filename;
+              break;
+            }
+          }
+          actualizarInfoFirmware();
+        } else {
+          statusDiv.textContent = `❌ ${data.error}`;
+          statusDiv.style.color = "#ff1744";
+        }
+      } catch {
+        statusDiv.textContent = "❌ Error inesperado del servidor";
+        statusDiv.style.color = "#ff1744";
+      }
+      resolve();
+    };
+
+    xhr.onerror = () => {
+      progressWrap.style.display = "none";
+      statusDiv.textContent = "❌ Error de red al subir el archivo";
+      statusDiv.style.color = "#ff1744";
+      resolve();
+    };
+
+    xhr.open("POST", "/api/firmware/upload");
+    xhr.send(formData);
+  });
+}
+
+// ── Eliminar firmware seleccionado ────────────────────────
+async function eliminarFirmwareSeleccionado() {
+  const select = document.getElementById("ota-firmware-select");
+  const filename = select.value;
+  if (!filename) return;
+
+  if (!confirm(`¿Eliminar ${filename} del servidor?`)) return;
+
+  try {
+    const res = await fetch(`/api/firmware/${filename}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.ok) {
+      await cargarFirmwares();
+    } else {
+      alert("Error al eliminar: " + data.error);
+    }
+  } catch (e) {
+    alert("Error de red: " + e.message);
+  }
+}
+
+// ── Enviar comando OTA al nodo por MQTT ───────────────────
+async function enviarComandoOTA() {
+  const uid = nodoActual;
+  const filename = document.getElementById("ota-firmware-select").value;
+  const btn = document.getElementById("btn-enviar-ota");
+
+  if (!uid) {
+    _otaStatus("error", "⚠ Seleccioná un nodo antes de enviar.");
+    return;
+  }
+  if (!filename) {
+    _otaStatus("error", "⚠ Seleccioná o subí un firmware primero.");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Enviando...";
+  _otaStatus("info", "📡 Publicando comando en el broker MQTT...");
+
+  try {
+    const res = await fetch("/api/config/nodos/comando-ota", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid, filename }),
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      _otaStatus(
+        "ok",
+        `✅ Comando enviado al nodo ${uid}\n` +
+          `Versión: ${data.version}\n` +
+          `El nodo se va a reiniciar en ~30 seg.`,
+      );
+      btn.textContent = "✅ Enviado";
+      setTimeout(cerrarModalOTA, 4000);
+    } else {
+      _otaStatus("error", `❌ ${data.error}`);
+      btn.disabled = false;
+      btn.textContent = "⬆ Enviar OTA al nodo";
+    }
+  } catch (e) {
+    _otaStatus("error", `❌ Error de red: ${e.message}`);
+    btn.disabled = false;
+    btn.textContent = "⬆ Enviar OTA al nodo";
+  }
+}
+
+// ── Helper status ─────────────────────────────────────────
+function _otaStatus(tipo, msg) {
+  const el = document.getElementById("ota-status");
+  if (!el) return;
+  const estilos = {
+    ok: "background:rgba(0,230,118,0.08);border:1px solid #00e676;color:#00e676",
+    error:
+      "background:rgba(255,23,68,0.08);border:1px solid #ff1744;color:#ff1744",
+    info: "background:rgba(255,234,0,0.06);border:1px solid rgba(255,234,0,0.3);color:#ffea00",
+  };
+  el.style.cssText = `display:block;padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:14px;text-align:center;white-space:pre-line;line-height:1.6;${estilos[tipo]}`;
+  el.textContent = msg;
+}
+
+// ── Escape para cerrar ────────────────────────────────────
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const overlay = document.getElementById("modal-ota-overlay");
+    if (overlay?.style.display === "flex") cerrarModalOTA();
+  }
+});

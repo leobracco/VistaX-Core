@@ -11,7 +11,8 @@ const profilesManager = require("./core/database/profiles_manager");
 const configRoutes = require("./routes/config.routes");
 const lotesRoutes = require("./routes/lotes.routes");
 const seedsRoutes = require("./routes/seeds.routes");
-
+const firmwareRoutes = require("./routes/firmware.routes");
+const FIRMWARE_DIR = "/firmware/";
 const iniciarSimulador = require("./simulador");
 
 const mapaRoutes = require("./routes/mapa.routes");
@@ -25,7 +26,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-app.use("/api/semillas", seedsRoutes(io));
+
 console.log(`\x1b[33m[VistaX]\x1b[0m Levantando servidor...`);
 
 // ==========================================
@@ -43,7 +44,7 @@ const mqttHandler = initMQTT(io, () => {
   }
   return currentConfig;
 });
-
+app.locals.mqttHandler = mqttHandler;
 // Rutas
 app.use("/api/config", configRoutes);
 app.use("/api/lotes", lotesRoutes);
@@ -74,6 +75,8 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use("/firmware", express.static(FIRMWARE_DIR)); // el ESP32 descarga de acá
+app.use("/api/firmware", firmwareRoutes); // panel web gestiona desde acá
 // iniciarSimulador(io, () => profilesManager.getActiveProfile(profilesManager.getLastProfileName()));
 
 const PORT = process.env.PORT || 3000;

@@ -45,6 +45,38 @@ const MapUI = (() => {
     _set('hkpi-ha',   (stats.hectareasAprox || '—') + ' ha');
   });
 
+  // ----------------------------------------------------------
+  // FIX #1: Escuchar lote_update — sincroniza estado cuando el
+  // lote se inicia o cierra desde el monitor (otra pestaña/dispositivo)
+  // ----------------------------------------------------------
+  socket.on('lote_update', (data) => {
+    if (data.activo) {
+      // Se inició un lote desde otra pestaña o desde el monitor
+      loteActivo = {
+        id:      data.id,
+        nombre:  data.nombre,
+        cultivo: data.cultivo,
+      };
+      loteIdExport = data.id;
+      surcoEstado  = {};
+      MapEngine.resetear();
+      actualizarUILote();
+      toast(`Lote "${data.nombre}" iniciado`);
+      cargarHistorial();
+    } else {
+      // Lote cerrado desde otra pestaña
+      if (loteActivo) {
+        loteIdExport = loteActivo.id;
+      }
+      loteActivo = null;
+      actualizarUILote();
+      cargarHistorial();
+      const btnExp = document.getElementById('btn-export');
+      if (btnExp) btnExp.style.display = 'inline-flex';
+      toast('Lote cerrado');
+    }
+  });
+
   // ============================================================
   // MODAL DETALLE SURCO
   // ============================================================

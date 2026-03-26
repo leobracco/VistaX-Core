@@ -32,20 +32,19 @@
           <div class="sidebar-info">
             <label>Máquina Actual</label>
             <select id="select-maquina-archivo" class="config-select-main">
-              <option value="tanzi_43_semilla.json">
-                tanzi_43_semilla.json
-              </option>
+              <option value="tanzi_43_semilla.json">tanzi_43_semilla.json</option>
             </select>
           </div>
         </aside>
 
         <section class="config-main">
+
+          <!-- ═══ TAB GENERAL ═══ -->
           <div id="tab-general" class="tab-content active">
             <div class="section-header">
               <h3>Estructura de la Sembradora</h3>
               <p>Parámetros base para el cálculo de semillas y dosis.</p>
             </div>
-
             <div class="card-grid">
               <div class="input-card">
                 <label>Nombre del Implemento</label>
@@ -53,30 +52,15 @@
               </div>
               <div class="input-card">
                 <label>Factor K (Pulsos/Semilla)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  id="cfg-k"
-                  placeholder="0.15"
-                />
+                <input type="number" step="0.01" id="cfg-k" placeholder="0.15" />
               </div>
               <div class="input-card">
                 <label>Distancia entre Líneas (m)</label>
-                <input
-                  type="number"
-                  step="0.001"
-                  id="cfg-distancia"
-                  placeholder="0.191"
-                />
+                <input type="number" step="0.001" id="cfg-distancia" placeholder="0.191" />
               </div>
               <div class="input-card">
                 <label>Peso de 1000 semillas (g)</label>
-                <input
-                  type="number"
-                  step="0.1"
-                  id="cfg-p1000"
-                  placeholder="Ej: 180"
-                />
+                <input type="number" step="0.1" id="cfg-p1000" placeholder="Ej: 180" />
               </div>
               <div class="input-card">
                 <label>RPM Turbina (Mínimo)</label>
@@ -87,8 +71,7 @@
                 <input type="number" id="cfg-rpm-max" placeholder="4500" />
               </div>
             </div>
-
-            <div class="section-header" style="margin-top: 20px">
+            <div class="section-header" style="margin-top:20px">
               <h3>Configuración de Tolvas</h3>
             </div>
             <div class="card-grid">
@@ -99,39 +82,30 @@
             </div>
           </div>
 
-          <div id="tab-sensores" class="tab-content" style="display: none">
-            <div
-              class="table-header-actions"
-              style="flex-wrap: wrap; gap: 15px"
-            >
-              <div style="flex: 1; min-width: 250px">
-                <label
-                  style="
-                    color: var(--accent);
-                    font-size: 10px;
-                    font-weight: bold;
-                    text-transform: uppercase;
-                    display: block;
-                    margin-bottom: 5px;
-                  "
-                >
+          <!-- ═══ TAB SENSORES ═══ -->
+          <div id="tab-sensores" class="tab-content" style="display:none">
+            <div class="table-header-actions" style="flex-wrap:wrap; gap:15px">
+
+              <!-- Selector de nodo + botón OTA -->
+              <div style="flex:1; min-width:250px">
+                <label style="color:var(--accent);font-size:10px;font-weight:bold;text-transform:uppercase;display:block;margin-bottom:5px;">
                   Viendo configuración del Nodo:
                 </label>
-                <div style="display: flex; gap: 10px">
-                  <select
-                    id="select-nodo-filter"
-                    class="config-select-main"
-                    onchange="cambiarNodo()"
-                  ></select>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                  <select id="select-nodo-filter" class="config-select-main" onchange="cambiarNodo()"></select>
+                  <button class="btn-cancel" style="padding:8px 15px" onclick="agregarNuevoNodo()">+ NODO</button>
+                  <!-- ════ BOTÓN OTA ════ -->
                   <button
-                    class="btn-cancel"
-                    style="padding: 8px 15px"
-                    onclick="agregarNuevoNodo()"
-                  >
-                    + NODO
-                  </button>
+                    id="btn-abrir-ota"
+                    onclick="abrirModalOTA()"
+                    title="Enviar actualización de firmware al nodo seleccionado vía MQTT"
+                    style="padding:8px 14px;background:transparent;color:#ffea00;border:1px solid #ffea00;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;letter-spacing:0.5px;"
+                    onmouseover="this.style.background='rgba(255,234,0,0.1)';this.style.boxShadow='0 0 8px rgba(255,234,0,0.3)'"
+                    onmouseout="this.style.background='transparent';this.style.boxShadow='none'"
+                  >⬆ OTA</button>
                 </div>
               </div>
+
               <button class="btn-action-add" onclick="agregarFilaSensor()">
                 <i class="fas fa-plus"></i> AGREGAR CABLE
               </button>
@@ -145,7 +119,7 @@
                     <th>BAJADA / SURCO #</th>
                     <th>TREN</th>
                     <th>TIPO DE SENSOR</th>
-                    <th style="text-align: center">ACCIÓN</th>
+                    <th style="text-align:center">ACCIÓN</th>
                   </tr>
                 </thead>
                 <tbody id="lista-sensores-tbody"></tbody>
@@ -153,17 +127,17 @@
             </div>
           </div>
 
-          <div id="tab-mapeo" class="tab-content" style="display: none">
+          <!-- ═══ TAB MAPEO ═══ -->
+          <div id="tab-mapeo" class="tab-content" style="display:none">
             <div class="section-header">
               <h3>Distribución en Planta</h3>
-              <p>
-                Verificación visual de la numeración de los surcos y trenes.
-              </p>
+              <p>Verificación visual de la numeración de los surcos y trenes.</p>
             </div>
             <div id="mapeo-visual-canvas" class="mapeo-visual-canvas"></div>
           </div>
 
-          <div id="tab-pantalla" class="tab-content" style="display: none">
+          <!-- ═══ TAB PANTALLA ═══ -->
+          <div id="tab-pantalla" class="tab-content" style="display:none">
             <div class="section-header">
               <h3>Preferencias de Interfaz</h3>
               <p>Ajusta lo que quieres ver y escuchar en pantalla.</p>
@@ -171,11 +145,7 @@
             <div class="card-grid">
               <div class="input-card">
                 <label>Sonido de Alerta</label>
-                <select
-                  id="cfg-audio-file"
-                  class="config-select-main"
-                  onchange="probarSonido(this.value)"
-                >
+                <select id="cfg-audio-file" class="config-select-main" onchange="probarSonido(this.value)">
                   <option value="/sounds/alarma1.mp3">Beep Corto</option>
                   <option value="/sounds/sirena.mp3">Sirena Continua</option>
                   <option value="/sounds/buzzer.mp3">Buzzer Grave</option>
@@ -183,32 +153,21 @@
               </div>
               <div class="input-card">
                 <label>Panel Superior (Velocidad, Dosis)</label>
-                <select
-                  class="config-select-main"
-                  onchange="
-                    document.querySelector('.vistax-header').style.display =
-                      this.value
-                  "
-                >
+                <select class="config-select-main" onchange="document.querySelector('.vistax-header').style.display=this.value">
                   <option value="flex">Visible</option>
                   <option value="none">Oculto</option>
                 </select>
               </div>
               <div class="input-card">
                 <label>Panel Especiales (Turbinas, Ejes)</label>
-                <select
-                  class="config-select-main"
-                  onchange="
-                    document.getElementById('tren-especiales').style.display =
-                      this.value
-                  "
-                >
+                <select class="config-select-main" onchange="document.getElementById('tren-especiales').style.display=this.value">
                   <option value="flex">Visible</option>
                   <option value="none">Oculto</option>
                 </select>
               </div>
             </div>
           </div>
+
         </section>
       </div>
     </div>
@@ -217,12 +176,161 @@
       <button class="btn-footer btn-cancel" onclick="cerrarModal()">
         <i class="fas fa-times"></i> DESCARTAR
       </button>
-      <button
-        class="btn-footer btn-save"
-        onclick="guardarConfiguracionCompleta()"
-      >
+      <button class="btn-footer btn-save" onclick="guardarConfiguracionCompleta()">
         <i class="fas fa-save"></i> GUARDAR Y APLICAR
       </button>
     </div>
   </div>
 </div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     REEMPLAZA el div#modal-ota-overlay en config_modal.ejs
+     ══════════════════════════════════════════════════════════ -->
+
+<div
+  id="modal-ota-overlay"
+  onclick="if(event.target===this)cerrarModalOTA()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(3px);z-index:3000;align-items:center;justify-content:center;"
+>
+  <div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,0.5);">
+
+    <!-- ── Header ── -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #2a2a2a;">
+      <div>
+        <div style="font-size:13px;font-weight:bold;color:#fff;letter-spacing:0.5px;">GESTIÓN DE NODO</div>
+        <div id="ota-uid-display" style="font-family:monospace;font-size:16px;color:var(--accent);margin-top:2px;">—</div>
+      </div>
+      <button onclick="cerrarModalOTA()" style="background:none;border:none;color:#555;font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+
+    <!-- ── Panel de estado del nodo ── -->
+    <div style="padding:16px 24px;border-bottom:1px solid #2a2a2a;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;">Estado del nodo</span>
+        <button onclick="solicitarEstadoNodo()"
+          style="padding:4px 10px;background:#111;border:1px solid #333;color:#888;border-radius:4px;cursor:pointer;font-size:11px;"
+          onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'"
+        >↻ Actualizar</button>
+      </div>
+
+      <div id="nodo-status-panel" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <!-- Se rellena por JS -->
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">Estado</div>
+          <div id="ns-online" style="font-size:13px;font-weight:bold;color:#555;">— sin datos —</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">Firmware</div>
+          <div id="ns-version" style="font-size:13px;font-weight:bold;color:#fff;font-family:monospace;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">IP</div>
+          <div id="ns-ip" style="font-size:13px;font-weight:bold;color:#fff;font-family:monospace;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">WiFi (RSSI)</div>
+          <div id="ns-rssi" style="font-size:13px;font-weight:bold;color:#fff;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">Uptime</div>
+          <div id="ns-uptime" style="font-size:13px;font-weight:bold;color:#fff;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">RAM libre</div>
+          <div id="ns-heap" style="font-size:13px;font-weight:bold;color:#fff;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Comandos rápidos ── -->
+    <div style="padding:16px 24px;border-bottom:1px solid #2a2a2a;">
+      <div style="font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;margin-bottom:10px;">Comandos</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="enviarComando('estado')"
+          style="flex:1;padding:9px;background:#111;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;"
+          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+          onmouseout="this.style.borderColor='#333';this.style.color='#aaa'"
+        >📊 Estado</button>
+        <button onclick="enviarComando('reiniciar')"
+          style="flex:1;padding:9px;background:#111;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;"
+          onmouseover="this.style.borderColor='#ffea00';this.style.color='#ffea00'"
+          onmouseout="this.style.borderColor='#333';this.style.color='#aaa'"
+        >🔄 Reiniciar</button>
+        <button onclick="confirmarBorrarWifi()"
+          style="flex:1;padding:9px;background:#111;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;"
+          onmouseover="this.style.borderColor='#ff1744';this.style.color='#ff1744'"
+          onmouseout="this.style.borderColor='#333';this.style.color='#aaa'"
+        >🗑 Borrar WiFi</button>
+      </div>
+      <!-- Feedback de comandos -->
+      <div id="cmd-status" style="display:none;margin-top:10px;padding:8px 12px;border-radius:4px;font-size:11px;text-align:center;"></div>
+    </div>
+
+    <!-- ── OTA ── -->
+    <div style="padding:16px 24px;">
+      <div style="font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;margin-bottom:10px;">⬆ Actualización OTA</div>
+
+      <!-- Selector firmware -->
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="ota-firmware-select" class="config-select-main" style="flex:1;font-family:monospace;">
+            <option value="">— cargando... —</option>
+          </select>
+          <button onclick="cargarFirmwares()" title="Refrescar"
+            style="padding:8px 10px;background:#111;border:1px solid #333;color:#888;border-radius:4px;cursor:pointer;font-size:14px;"
+            onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#888'">↻</button>
+          <button onclick="eliminarFirmwareSeleccionado()" title="Eliminar"
+            style="padding:8px 10px;background:#111;border:1px solid #333;color:#555;border-radius:4px;cursor:pointer;font-size:14px;"
+            onmouseover="this.style.color='#ff1744'" onmouseout="this.style.color='#555'">🗑</button>
+        </div>
+        <div id="ota-firmware-info" style="font-size:11px;color:#555;margin-top:5px;min-height:14px;"></div>
+      </div>
+
+      <!-- Drop zone -->
+      <div
+        id="ota-dropzone"
+        ondragover="event.preventDefault();this.style.borderColor='#ffea00';this.style.background='rgba(255,234,0,0.05)'"
+        ondragleave="this.style.borderColor='#333';this.style.background='transparent'"
+        ondrop="handleFirmwareDrop(event)"
+        onclick="document.getElementById('ota-file-input').click()"
+        style="border:2px dashed #333;border-radius:6px;padding:14px;text-align:center;cursor:pointer;margin-bottom:4px;"
+        onmouseover="this.style.borderColor='#555'" onmouseout="this.style.borderColor='#333'"
+      >
+        <div style="font-size:18px;margin-bottom:4px">📦</div>
+        <div style="font-size:11px;color:#666;">Arrastrá o click para subir <code style="color:#aaa">VX-*.bin</code></div>
+        <div id="ota-upload-status" style="font-size:11px;color:#555;margin-top:3px;"></div>
+      </div>
+      <input id="ota-file-input" type="file" accept=".bin" style="display:none" onchange="subirFirmware(this.files[0])">
+
+      <!-- Barra de progreso -->
+      <div id="ota-progress-bar-wrap" style="display:none;margin:6px 0 10px;">
+        <div style="background:#111;border-radius:4px;height:3px;overflow:hidden;">
+          <div id="ota-progress-bar" style="height:100%;background:#ffea00;width:0%;transition:width 0.2s;"></div>
+        </div>
+      </div>
+
+      <!-- Advertencia -->
+      <div style="background:rgba(255,234,0,0.04);border:1px solid rgba(255,234,0,0.12);border-radius:4px;padding:8px 12px;font-size:11px;color:#666;margin:10px 0;line-height:1.5;">
+        ⚠ El nodo descargará el firmware, lo flasheará y se reiniciará (~30 seg sin conexión).
+      </div>
+
+      <!-- Estado OTA -->
+      <div id="ota-status" style="display:none;padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;text-align:center;white-space:pre-line;line-height:1.6;"></div>
+
+      <!-- Botones OTA -->
+      <div style="display:flex;gap:8px;">
+        <button onclick="cerrarModalOTA()"
+          style="flex:1;padding:10px;background:#222;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:13px;"
+          onmouseover="this.style.background='#2a2a2a'" onmouseout="this.style.background='#222'"
+        >Cerrar</button>
+        <button id="btn-enviar-ota" onclick="enviarComandoOTA()"
+          style="flex:2;padding:10px;background:rgba(255,234,0,0.08);border:1px solid #ffea00;color:#ffea00;border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;"
+          onmouseover="this.style.background='rgba(255,234,0,0.15)'" onmouseout="this.style.background='rgba(255,234,0,0.08)'"
+        >⬆ Enviar OTA al nodo</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+

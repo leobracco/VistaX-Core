@@ -9,7 +9,8 @@
     "rpm_max": 5000,
     "tolvas": 2,
     "velocidad_max": 8.5,
-    "alarma_tiempo_seg": 2
+    "alarma_tiempo_seg": 2,
+    "densidad_objetivo": 11
   },
   "mapeo_sensores": [
     {
