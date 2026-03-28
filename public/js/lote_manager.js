@@ -1,41 +1,79 @@
 // ============================================================
-// public/js/lote_manager.js
-// Gestión completa del lote desde la UI de VistaX
-// Se carga en index.ejs ANTES de render_engine.js
+// public/js/lote_manager.js  (v3)
+//
+// Gestiona el estado del lote activo en el navegador.
+// Escucha "lote_update" del socket → sincroniza UI sin importar
+// el origen del evento (CoreX, AOG, UI manual, MQTT).
+//
+// ESTE es el archivo que faltaba y causaba que la UI
+// se quedara en estado "grabando" después de cerrar.
 // ============================================================
 
 (function () {
-  // ── Estado local ──
-  let _loteActivo = window.LOTE_ACTIVO || null;
+  "use strict";
 
-  // ── Al cargar: sincronizar UI con estado del servidor ──
-  document.addEventListener("DOMContentLoaded", () => {
-    _sincronizarUI(_loteActivo);
-  });
+  if (!window.LOTE_ACTIVO) window.LOTE_ACTIVO = null;
 
-  // ── Abrir modal: muestra panel correcto según estado ──
+  // ═══════════════════════════════════════════
+  // API PÚBLICA
+  // ═══════════════════════════════════════════
+  window.LoteManager = {
+    hayLoteActivo() {
+      return !!(window.LOTE_ACTIVO && window.LOTE_ACTIVO.activo);
+    },
+
+    setLoteActivo(datos) {
+      window.LOTE_ACTIVO = datos;
+      _actualizarUI();
+    },
+
+    limpiarLote() {
+      window.LOTE_ACTIVO = null;
+      _actualizarUI();
+    },
+
+    getLoteActivo() {
+      return window.LOTE_ACTIVO;
+    },
+  };
+
+  // ═══════════════════════════════════════════
+  // FUNCIONES GLOBALES (onclick del HTML)
+  // ═══════════════════════════════════════════
   window.abrirModalLote = function () {
-    const overlay = document.getElementById("modal-lote");
-    if (!overlay) return;
+    const modal = document.getElementById("modal-lote");
+    if (!modal) return;
 
-    if (_loteActivo?.activo) {
-      _mostrarPanelActivo(_loteActivo);
+    const panelNuevo  = document.getElementById("panel-nuevo-lote");
+    const panelActivo = document.getElementById("panel-lote-activo");
+    const titulo      = document.getElementById("modal-lote-titulo");
+
+    if (LoteManager.hayLoteActivo()) {
+      if (panelNuevo)  panelNuevo.style.display  = "none";
+      if (panelActivo) panelActivo.style.display = "block";
+      if (titulo) titulo.innerHTML = '<i class="fas fa-seedling"></i> LOTE EN CURSO';
+
+      const l = window.LOTE_ACTIVO;
+      _setText("lote-act-nombre",   l.nombre   || "—");
+      _setText("lote-act-cultivo",  l.cultivo  || "—");
+      _setText("lote-act-variedad", l.variedad || "—");
+      _setText("lote-act-estab",    l.estab    || "—");
+      _setText("lote-act-inicio",   l.inicio ? new Date(l.inicio).toLocaleString("es-AR") : "—");
+      _setText("lote-act-puntos",   l.puntosGrabados || "—");
     } else {
-      _mostrarPanelNuevo();
+      if (panelNuevo)  panelNuevo.style.display  = "block";
+      if (panelActivo) panelActivo.style.display = "none";
+      if (titulo) titulo.innerHTML = '<i class="fas fa-seedling"></i> INICIAR LOTE';
     }
-    overlay.style.display = "flex";
-    // Focus al primer input si es panel nuevo
-    if (!_loteActivo?.activo) {
-      setTimeout(() => document.getElementById("lote-inp-nombre")?.focus(), 80);
-    }
+
+    modal.style.display = "flex";
   };
 
   window.cerrarModalLote = function () {
-    const overlay = document.getElementById("modal-lote");
-    if (overlay) overlay.style.display = "none";
+    const modal = document.getElementById("modal-lote");
+    if (modal) modal.style.display = "none";
   };
 
-  // ── Iniciar lote ──
   window.iniciarLoteDesdeMonitor = async function () {
     const nombre   = document.getElementById("lote-inp-nombre")?.value.trim();
     const cultivo  = document.getElementById("lote-inp-cultivo")?.value;
@@ -43,7 +81,6 @@
     const estab    = document.getElementById("lote-inp-estab")?.value.trim();
     const ancho    = window.APP_CONFIG?.setup?.distancia_entre_surcos || 0.191;
 
-    // Validaciones
     if (!nombre) {
       const inp = document.getElementById("lote-inp-nombre");
       if (inp) { inp.style.borderColor = "var(--danger)"; inp.focus(); }
@@ -51,12 +88,9 @@
     }
     if (!cultivo) {
       const sel = document.getElementById("lote-inp-cultivo");
-      if (sel) sel.style.borderColor = "var(--danger)";
+      if (sel) { sel.style.borderColor = "var(--danger)"; sel.focus(); }
       return;
     }
-
-    const btnIniciar = document.querySelector("#panel-nuevo-lote .vx-btn-primary");
-    if (btnIniciar) { btnIniciar.disabled = true; btnIniciar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...'; }
 
     try {
       const res = await fetch("/api/mapa/iniciar", {
@@ -67,95 +101,123 @@
 
       if (res.ok) {
         const data = await res.json();
-        _loteActivo = { activo: true, nombre, cultivo, variedad, estab,
-                        inicio: data.lote?.inicio || new Date().toISOString() };
         cerrarModalLote();
-        _sincronizarUI(_loteActivo);
-        _toast(`Lote "${nombre}" iniciado ✓`);
+        // El socket lote_update va a llegar y actualizar la UI automáticamente
+        // pero por si hay latencia, actualizamos de inmediato también:
+        LoteManager.setLoteActivo({
+          activo: true, id: data.lote?.id,
+          nombre, cultivo, variedad, estab,
+          inicio: data.lote?.inicio || new Date().toISOString(),
+        });
         _limpiarFormulario();
+        console.log(`[LoteManager] Lote iniciado: "${nombre}"`);
       } else {
-        const err = await res.json();
-        _toast(`Error: ${err.error || "No se pudo iniciar"}`, true);
+        const err = await res.json().catch(() => ({}));
+        alert("Error: " + (err.error || "No se pudo iniciar"));
       }
     } catch (e) {
-      _toast("Error de conexión", true);
-    } finally {
-      if (btnIniciar) { btnIniciar.disabled = false; btnIniciar.innerHTML = '<i class="fas fa-play"></i> Iniciar Lote'; }
+      alert("Error de conexión");
     }
   };
 
-  // ── Cerrar lote ──
   window.cerrarLoteDesdeMonitor = async function () {
-    if (!confirm(`¿Cerrás el lote "${_loteActivo?.nombre}"?\nSe exportará el GeoJSON.`)) return;
+    const nombre = window.LOTE_ACTIVO?.nombre || "Lote activo";
+    if (!confirm(`¿Cerrar "${nombre}"? Se exportará el GeoJSON.`)) return;
 
     try {
       const res = await fetch("/api/mapa/cerrar", { method: "POST" });
       if (res.ok) {
-        const nombre = _loteActivo?.nombre || "Lote";
-        _loteActivo = null;
         cerrarModalLote();
-        _sincronizarUI(null);
-        _toast(`Lote "${nombre}" cerrado. GeoJSON exportado.`);
+        // El socket lote_update va a llegar, pero limpiamos inmediatamente:
+        LoteManager.limpiarLote();
+        console.log("[LoteManager] Lote cerrado");
       } else {
-        _toast("Error al cerrar el lote", true);
+        alert("Error al cerrar el lote");
       }
     } catch (e) {
-      _toast("Error de conexión", true);
+      alert("Error de conexión");
     }
   };
 
-  // ── Actualizar puntos GPS en tiempo real (llamado desde render_engine) ──
-  window.actualizarInfoLoteModal = function (stats) {
-    const el = document.getElementById("lote-act-puntos");
-    if (el && stats?.puntosGrabados !== undefined) {
-      el.textContent = stats.puntosGrabados;
+  // ═══════════════════════════════════════════
+  // SOCKET — Escuchar cambios de lote
+  // ═══════════════════════════════════════════
+  function _hookSocket() {
+    if (!window.socket) {
+      setTimeout(_hookSocket, 300);
+      return;
     }
-  };
 
-  // ── Helpers internos ──
+    // ═══ EVENTO CLAVE: lote_update ═══
+    // Llega cuando el lote se inicia o cierra desde CUALQUIER origen:
+    //   - CoreX (vía MQTT vistax/control/lote)
+    //   - AOG (vía aog/field/status painting:false)
+    //   - UI REST (POST /api/mapa/cerrar)
+    //   - Auto-cierre por timeout (30s sin pintar)
+    window.socket.on("lote_update", (data) => {
+      console.log("[LoteManager] lote_update:", data);
 
-  function _mostrarPanelNuevo() {
-    document.getElementById("panel-nuevo-lote").style.display  = "block";
-    document.getElementById("panel-lote-activo").style.display = "none";
-    document.getElementById("modal-lote-titulo").innerHTML =
-      '<i class="fas fa-seedling"></i> INICIAR LOTE';
-  }
-
-  function _mostrarPanelActivo(lote) {
-    document.getElementById("panel-nuevo-lote").style.display  = "none";
-    document.getElementById("panel-lote-activo").style.display = "block";
-    document.getElementById("modal-lote-titulo").innerHTML =
-      '<i class="fas fa-circle" style="color:var(--success);font-size:10px"></i> LOTE ACTIVO';
-
-    _setText("lote-act-nombre",   lote.nombre    || "—");
-    _setText("lote-act-cultivo",  _labelCultivo(lote.cultivo));
-    _setText("lote-act-variedad", lote.variedad  || "—");
-    _setText("lote-act-estab",    lote.estab     || "—");
-    _setText("lote-act-inicio",   lote.inicio
-      ? new Date(lote.inicio).toLocaleString("es-AR", { dateStyle:"short", timeStyle:"short" })
-      : "—");
-  }
-
-  function _sincronizarUI(lote) {
-    const txt  = document.getElementById("txt-lote");
-    const info = document.getElementById("lote-info-footer");
-
-    if (lote?.activo) {
-      if (txt)  txt.textContent = lote.nombre.toUpperCase();
-      if (info) info.classList.add("activo");
-    } else {
-      if (txt)  txt.textContent = "SIN LOTE — INICIAR";
-      if (info) info.classList.remove("activo");
-    }
-  }
-
-  function _limpiarFormulario() {
-    ["lote-inp-nombre","lote-inp-variedad","lote-inp-estab"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.value = ""; el.style.borderColor = ""; }
+      if (data.activo) {
+        LoteManager.setLoteActivo({
+          activo: true,
+          id:      data.id,
+          nombre:  data.nombre,
+          cultivo: data.cultivo,
+          inicio:  data.inicio || new Date().toISOString(),
+        });
+      } else {
+        // ═══ FIX: LIMPIAR UI INMEDIATAMENTE ═══
+        LoteManager.limpiarLote();
+        // Cerrar el modal de lote si está abierto
+        cerrarModalLote();
+      }
     });
-    const sel = document.getElementById("lote-inp-cultivo");
-    if (sel) { sel.value = ""; sel.style.borderColor = ""; }
+
+    window.socket.on("map_stats", (stats) => {
+      if (window.LOTE_ACTIVO && stats) {
+        window.LOTE_ACTIVO.puntosGrabados = stats.puntosGrabados || 0;
+      }
+    });
+
+    console.log("[LoteManager] Socket hooks activos");
+  }
+
+  // ═══════════════════════════════════════════
+  // UI — Actualizar footer y header
+  // ═══════════════════════════════════════════
+  function _actualizarUI() {
+    const hayLote = LoteManager.hayLoteActivo();
+    const l       = window.LOTE_ACTIVO;
+
+    // Footer texto
+    const txtLote = document.getElementById("txt-lote");
+    if (txtLote) {
+      txtLote.textContent = hayLote
+        ? (l.nombre || "LOTE ACTIVO").toUpperCase()
+        : "SIN LOTE \u2014 INICIAR";
+    }
+
+    // Footer estilo
+    const footerEl = document.getElementById("lote-info-footer");
+    if (footerEl) {
+      if (hayLote) {
+        footerEl.classList.add("activo");
+      } else {
+        footerEl.classList.remove("activo");
+      }
+    }
+
+    // Header badge
+    const badge = document.querySelector(".lote-activo-badge");
+    if (badge) {
+      badge.style.display = hayLote ? "flex" : "none";
+      const nombreBadge = badge.querySelector(".lote-nombre-badge");
+      if (nombreBadge && hayLote) nombreBadge.textContent = l.nombre;
+    }
+
+    // Header rec-dot
+    const recDot = document.querySelector(".rec-dot");
+    if (recDot) recDot.style.display = hayLote ? "inline-block" : "none";
   }
 
   function _setText(id, val) {
@@ -163,38 +225,24 @@
     if (el) el.textContent = val;
   }
 
-  function _labelCultivo(val) {
-    const map = { maiz:"Maíz", soja:"Soja", girasol:"Girasol",
-                  sorgo:"Sorgo", trigo:"Trigo", cebada:"Cebada", otro:"Otro" };
-    return map[val] || val || "—";
+  function _limpiarFormulario() {
+    ["lote-inp-nombre", "lote-inp-variedad", "lote-inp-estab"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value = ""; el.style.borderColor = ""; }
+    });
+    const sel = document.getElementById("lote-inp-cultivo");
+    if (sel) { sel.value = ""; sel.style.borderColor = ""; }
   }
 
-  function _toast(msg, isError = false) {
-    let t = document.getElementById("_vx_toast");
-    if (!t) {
-      t = document.createElement("div");
-      t.id = "_vx_toast";
-      t.style.cssText = [
-        "position:fixed","bottom:70px","left:50%",
-        "transform:translateX(-50%) translateY(40px)",
-        "background:#1e1e1e","border-radius:6px","padding:10px 20px",
-        "font-size:13px","font-weight:600","z-index:9999",
-        "transition:all .3s ease","opacity:0","pointer-events:none",
-        "white-space:nowrap","box-shadow:0 4px 16px rgba(0,0,0,.5)"
-      ].join(";");
-      document.body.appendChild(t);
+  // ═══════════════════════════════════════════
+  // INIT
+  // ═══════════════════════════════════════════
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.LOTE_ACTIVO && window.LOTE_ACTIVO.id) {
+      window.LOTE_ACTIVO.activo = true;
     }
-    t.textContent = msg;
-    t.style.borderColor = isError ? "var(--danger)" : "var(--accent)";
-    t.style.border      = `1px solid ${isError ? "var(--danger)" : "var(--accent)"}`;
-    t.style.color       = isError ? "var(--danger)" : "var(--accent)";
-    t.style.opacity     = "1";
-    t.style.transform   = "translateX(-50%) translateY(0)";
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => {
-      t.style.opacity   = "0";
-      t.style.transform = "translateX(-50%) translateY(40px)";
-    }, isError ? 4000 : 2500);
-  }
+    _actualizarUI();
+    _hookSocket();
+  });
 
 })();

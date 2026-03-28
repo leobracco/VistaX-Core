@@ -13,16 +13,11 @@
       <%- include('partials/header') %>
 
       <main class="monitor-wrapper-v2">
-
-        <!-- Barra info (sin colapso) -->
         <div class="strip-ctrl" style="cursor:default">
           <span class="strip-ctrl-lbl" id="strip-lbl">MONITOR DE SURCOS</span>
           <button class="strip-ctrl-btn" onclick="cambiarModo()">MODO</button>
         </div>
-
-        <!-- Grid de surcos — ocupa todo el espacio disponible -->
         <div class="monitor-grid" id="main-monitor" style="flex:1;min-height:0;"></div>
-
       </main>
 
       <%- include('partials/footer') %>
@@ -101,8 +96,8 @@
     </script>
 
     <script src="/socket.io/socket.io.js?v=3"></script>
-    <script src="/js/lote_manager.js?v=2"></script>
-    <script src="/js/trigger_manager.js?v=1"></script>
+    <script src="/js/lote_manager.js?v=4"></script>
+    <script src="/js/trigger_manager.js?v=4"></script>
     <script src="/js/render_engine.js?v=4"></script>
     <script src="/js/config_modal.js?v=3"></script>
     <script src="/js/ota_functions_v3.js?v=3"></script>

@@ -1,22 +1,18 @@
 <footer class="vistax-footer">
-  <%# Botón lote — cambia aspecto según estado %>
-  <div class="lote-info" id="lote-info-footer" onclick="abrirModalLote()" title="Gestionar lote">
-    <i class="fas fa-seedling"></i>
-    <span id="txt-lote">
-      <% if (loteActivo && loteActivo.activo) { %>
-        <%= loteActivo.nombre.toUpperCase() %>
-      <% } else { %>
-        SIN LOTE — INICIAR
-      <% } %>
-    </span>
-    <i class="fas fa-chevron-up" style="font-size:10px;margin-left:4px;opacity:0.5"></i>
-  </div>
+
+  <%# ═══ TOGGLE DE LOTE — Botón dual verde/rojo con timer ═══ %>
+  <button class="btn-toggle-lote lote-inactivo" id="btn-toggle-lote" title="Click para INICIAR lote">
+    <i class="fas fa-play" id="lote-toggle-icon"></i>
+    <span id="lote-toggle-label">SIN LOTE</span>
+    <span class="lote-toggle-timer" id="lote-toggle-timer" style="display:none">00:00</span>
+  </button>
 
   <div id="alert-ticker" class="alert-ticker">
     SISTEMA DE MONITOREO VISTAX LISTO
   </div>
 
   <div class="actions">
+    <div class="especiales-container" id="tren-especiales"></div>
     <button class="btn-tool" onclick="abrirModal()" title="Configuración">
       <i class="fas fa-cog"></i>
     </button>

@@ -1,6 +1,13 @@
 // ============================================================
-// VistaX - routes/mapa.routes.js
+// VistaX - routes/mapa_routes.js  (v3 — fix cierre lote)
+//
+// FIX: Ahora iniciar/cerrar lote usa las funciones centralizadas
+//      del mqttHandler que SIEMPRE emiten lote_update por socket.
+//      Antes, si se cerraba desde CoreX o desde la UI REST,
+//      el io.emit no llegaba porque mapa_routes.js tenía su
+//      propia lógica desacoplada.
 // ============================================================
+
 const express    = require("express");
 const path       = require("path");
 const fs         = require("fs");
@@ -8,21 +15,30 @@ const recorder   = require("../core/logic/map_recorder");
 const seedRecorder = require("../core/logic/seed_recorder");
 const LOTES_DIR  = path.join(__dirname, "../data/lotes");
 
-module.exports = (io) => {
+module.exports = (io, mqttHandler) => {
   const router = express.Router();
 
   // GET /api/mapa/lote-activo
   router.get("/lote-activo", (req, res) => {
-    res.json(recorder.getLoteActivo() || { activo: false });
+    const lote = recorder.getLoteActivo();
+    res.json(lote || { activo: false });
   });
 
   // POST /api/mapa/iniciar
   router.post("/iniciar", (req, res) => {
-    const { nombre, cultivo, anchoPasada } = req.body;
+    const { nombre, cultivo, variedad, estab, anchoPasada } = req.body;
     if (!nombre || !cultivo) {
       return res.status(400).json({ error: "nombre y cultivo son requeridos" });
     }
-    const lote = recorder.iniciarLote(nombre, cultivo, anchoPasada);
+
+    // Usar la función centralizada que EMITE lote_update
+    if (mqttHandler?.iniciarLoteDesdeRuta) {
+      const lote = mqttHandler.iniciarLoteDesdeRuta(nombre, cultivo, { variedad, estab, anchoPasada });
+      return res.json({ ok: true, lote });
+    }
+
+    // Fallback si mqttHandler no tiene la función (compatibilidad)
+    const lote = recorder.iniciarLote(nombre, cultivo, anchoPasada, { variedad, estab });
     seedRecorder.iniciarLote(lote.id, nombre);
     io.emit("lote_update", { activo: true, id: lote.id, nombre: lote.nombre, cultivo: lote.cultivo });
     res.json({ ok: true, lote });
@@ -30,6 +46,14 @@ module.exports = (io) => {
 
   // POST /api/mapa/cerrar
   router.post("/cerrar", (req, res) => {
+    // Usar la función centralizada que EMITE lote_update
+    if (mqttHandler?.cerrarLoteDesdeRuta) {
+      const resultado = mqttHandler.cerrarLoteDesdeRuta();
+      if (!resultado) return res.status(400).json({ error: "No hay lote activo" });
+      return res.json({ ok: true, ...resultado });
+    }
+
+    // Fallback
     const resultado = recorder.cerrarLote();
     seedRecorder.cerrarLote();
     if (!resultado) return res.status(400).json({ error: "No hay lote activo" });
@@ -47,11 +71,9 @@ module.exports = (io) => {
     res.json(recorder.getGeoJSONPasadas());
   });
 
-  // GET /api/mapa/historial?page=0&limit=10
+  // GET /api/mapa/historial
   router.get("/historial", (req, res) => {
-    const page  = parseInt(req.query.page)  || 0;
-    const limit = parseInt(req.query.limit) || 10;
-    res.json(recorder.listarLotes(page, limit));
+    res.json(recorder.listarLotes());
   });
 
   // GET /api/mapa/geojson/:loteId
@@ -68,14 +90,18 @@ module.exports = (io) => {
     res.download(filePath, `${req.params.loteId}.geojson`);
   });
 
-  // DELETE /api/mapa/lote/:loteId — eliminar lote del historial
+  // DELETE /api/mapa/lote/:loteId
   router.delete("/lote/:loteId", (req, res) => {
     const id   = req.params.loteId.replace(/[^a-z0-9_]/gi, "");
     const json = path.join(LOTES_DIR, `${id}.json`);
     const geo  = path.join(LOTES_DIR, `${id}.geojson`);
+    const jsonl = path.join(LOTES_DIR, `${id}_semillas.jsonl`);
+    const sgeo  = path.join(LOTES_DIR, `${id}_semillas.geojson`);
+    const meta  = path.join(LOTES_DIR, `${id}_meta.json`);
     let borrados = 0;
-    if (fs.existsSync(json))  { fs.unlinkSync(json);  borrados++; }
-    if (fs.existsSync(geo))   { fs.unlinkSync(geo);   borrados++; }
+    [json, geo, jsonl, sgeo, meta].forEach(f => {
+      if (fs.existsSync(f)) { fs.unlinkSync(f); borrados++; }
+    });
     if (!borrados) return res.status(404).json({ error: "Lote no encontrado" });
     res.json({ ok: true, id });
   });

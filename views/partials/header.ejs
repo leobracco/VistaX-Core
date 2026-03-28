@@ -27,6 +27,24 @@
       <small>FALLAS</small>
       <div><strong id="kpi-fallas" style="color:var(--danger)">0</strong></div>
     </div>
+
+    <%# ═══ NUEVO: KPI Sensores Online ═══ %>
+    <div class="kpi">
+      <small>ONLINE</small>
+      <div>
+        <span id="kpi-online" style="color:var(--accent);font-weight:700">
+          <%
+            var totalSensores = 0;
+            if (config && config.mapeo_sensores) {
+              totalSensores = config.mapeo_sensores.filter(function(s) {
+                return s.tipo === 'semilla' || s.tipo === 'ferti_linea' || s.tipo === 'ferti_costado';
+              }).length;
+            }
+          %>
+          <%= totalSensores %> / <%= totalSensores %>
+        </span>
+      </div>
+    </div>
   </div>
 
   <div class="status-info">
@@ -38,15 +56,10 @@
       </div>
     <% } %>
 
-    <%# Botón modo compacto (se activa si hay muchos surcos) %>
     <button class="btn-tool" id="btn-modo" onclick="toggleModoCompacto()"
             title="Alternar vista compacta" style="display:none">
       <i class="fas fa-compress-alt"></i>
     </button>
-
-    <a href="/mapa" class="btn-tool" title="Ver mapa de siembra">
-      <i class="fas fa-map-marked-alt"></i>
-    </a>
 
     <div class="status-dot online" id="status-dot"></div>
 
