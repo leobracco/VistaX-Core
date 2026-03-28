@@ -10,12 +10,18 @@ const initMQTT = require("./core/logic/mqtt_handler");
 const profilesManager = require("./core/database/profiles_manager");
 const configRoutes = require("./routes/config.routes");
 const lotesRoutes = require("./routes/lotes.routes");
-const seedsRoutes = require("./routes/seeds.routes");
-const firmwareRoutes = require("./routes/firmware.routes");
-const FIRMWARE_DIR = "/firmware/";
+
 const iniciarSimulador = require("./simulador");
 
-const mapaRoutes = require("./routes/mapa.routes");
+let mapaRoutes;
+try {
+  mapaRoutes = require("./routes/mapa.routes");
+  if (typeof mapaRoutes !== "function") throw new Error("mapa.routes no exportó un router válido, exportó: " + typeof mapaRoutes);
+  console.log("[VistaX] ✅ mapa.routes cargado");
+} catch(e) {
+  console.error("[VistaX] ❌ Error cargando mapa.routes:", e.message);
+  mapaRoutes = require("express").Router(); // router vacío como fallback
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -44,11 +50,11 @@ const mqttHandler = initMQTT(io, () => {
   }
   return currentConfig;
 });
-app.locals.mqttHandler = mqttHandler;
+
 // Rutas
 app.use("/api/config", configRoutes);
 app.use("/api/lotes", lotesRoutes);
-app.use("/api/mapa", mapaRoutes(io));
+app.use("/api/mapa", mapaRoutes);
 
 // Y agregar la ruta de la vista del mapa:
 app.get("/mapa", (req, res) => {
@@ -75,8 +81,6 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/firmware", express.static(FIRMWARE_DIR)); // el ESP32 descarga de acá
-app.use("/api/firmware", firmwareRoutes); // panel web gestiona desde acá
 // iniciarSimulador(io, () => profilesManager.getActiveProfile(profilesManager.getLastProfileName()));
 
 const PORT = process.env.PORT || 3000;

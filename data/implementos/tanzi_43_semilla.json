@@ -10,9 +10,65 @@
     "tolvas": 2,
     "velocidad_max": 8.5,
     "alarma_tiempo_seg": 2,
-    "densidad_objetivo": 11
+    "densidad_objetivo": 16
   },
   "mapeo_sensores": [
+    {
+      "uid": "VX-S3-C1",
+      "cable": 1,
+      "bajada": 15,
+      "tipo": "semilla",
+      "nombre": "S15",
+      "tren": 2
+    },
+    {
+      "uid": "VX-S3-C1",
+      "cable": 2,
+      "bajada": 16,
+      "tipo": "semilla",
+      "nombre": "S16",
+      "tren": 2
+    },
+    {
+      "uid": "VX-S3-C1",
+      "cable": 3,
+      "bajada": 17,
+      "tipo": "semilla",
+      "nombre": "S17",
+      "tren": 2
+    },
+    {
+      "uid": "VX-S3-C1",
+      "cable": 4,
+      "bajada": 18,
+      "tipo": "semilla",
+      "nombre": "S18",
+      "tren": 2
+    },
+    {
+      "uid": "VX-S3-C1",
+      "cable": 5,
+      "bajada": 19,
+      "tipo": "semilla",
+      "nombre": "S19",
+      "tren": 2
+    },
+    {
+      "uid": "VX-S3-C1",
+      "cable": 6,
+      "bajada": 20,
+      "tipo": "semilla",
+      "nombre": "S20",
+      "tren": 2
+    },
+    {
+      "uid": "VX-S3-C1",
+      "cable": 7,
+      "bajada": 21,
+      "tipo": "semilla",
+      "nombre": "S21",
+      "tren": 2
+    },
     {
       "uid": "VX-E5A1DF7C",
       "cable": 1,
@@ -70,6 +126,118 @@
       "tren": 2
     },
     {
+      "uid": "VX-S3-B3",
+      "cable": 1,
+      "bajada": 22,
+      "tipo": "semilla",
+      "nombre": "S22",
+      "tren": 2
+    },
+    {
+      "uid": "VX-S3-B3",
+      "cable": 2,
+      "bajada": 23,
+      "tipo": "semilla",
+      "nombre": "S23",
+      "tren": 2
+    },
+    {
+      "uid": "VX-S3-B3",
+      "cable": 3,
+      "bajada": 24,
+      "tipo": "semilla",
+      "nombre": "S24",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B3",
+      "cable": 4,
+      "bajada": 25,
+      "tipo": "semilla",
+      "nombre": "S25",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B3",
+      "cable": 5,
+      "bajada": 26,
+      "tipo": "semilla",
+      "nombre": "S26",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B3",
+      "cable": 6,
+      "bajada": 27,
+      "tipo": "semilla",
+      "nombre": "S27",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B3",
+      "cable": 7,
+      "bajada": 28,
+      "tipo": "semilla",
+      "nombre": "S28",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B2",
+      "cable": 1,
+      "bajada": 29,
+      "tipo": "semilla",
+      "nombre": "S29",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B2",
+      "cable": 2,
+      "bajada": 30,
+      "tipo": "semilla",
+      "nombre": "S30",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B2",
+      "cable": 3,
+      "bajada": 31,
+      "tipo": "semilla",
+      "nombre": "S31",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B2",
+      "cable": 4,
+      "bajada": 32,
+      "tipo": "semilla",
+      "nombre": "S32",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B2",
+      "cable": 5,
+      "bajada": 33,
+      "tipo": "semilla",
+      "nombre": "S33",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B2",
+      "cable": 6,
+      "bajada": 34,
+      "tipo": "semilla",
+      "nombre": "S34",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B2",
+      "cable": 7,
+      "bajada": 35,
+      "tipo": "semilla",
+      "nombre": "S35",
+      "tren": 1
+    },
+    {
       "uid": "VX-DE4EB580",
       "cable": 1,
       "bajada": 8,
@@ -124,6 +292,62 @@
       "tipo": "semilla",
       "nombre": "S14",
       "tren": 2
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 1,
+      "bajada": 36,
+      "tipo": "semilla",
+      "nombre": "S36",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 2,
+      "bajada": 37,
+      "tipo": "semilla",
+      "nombre": "S37",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 3,
+      "bajada": 38,
+      "tipo": "semilla",
+      "nombre": "S38",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 4,
+      "bajada": 39,
+      "tipo": "semilla",
+      "nombre": "S39",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 5,
+      "bajada": 40,
+      "tipo": "semilla",
+      "nombre": "S40",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 6,
+      "bajada": 41,
+      "tipo": "semilla",
+      "nombre": "S41",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 7,
+      "bajada": 42,
+      "tipo": "semilla",
+      "nombre": "S42",
+      "tren": 1
     }
   ]
 }

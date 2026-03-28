@@ -34,9 +34,7 @@ const MapEngine = (() => {
   let surcosCentro = 0;
   let centrado = false;
   let spmMax = 0;
-  // FIX #3: alertasCount ahora refleja alertas ACTIVAS en el punto actual,
-  // no un acumulador que solo crece. Se recalcula en cada pintarPuntoGPS.
-  let alertasActivas = 0;
+  let alertasCount = 0;
   let totalPuntos = 0;
   let trackCoords = [];
   let trackLine = null;
@@ -68,114 +66,39 @@ const MapEngine = (() => {
   });
 
   // ============================================================
-  // TILES — online con fallback offline
+  // MODO SIEMPRE OFFLINE — grilla oscura, sin tiles externos
   // ============================================================
-  let tileLayer = null;
-
-  function iniciarTiles() {
-    tileLayer = L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      {
-        attribution: "© OpenStreetMap © CARTO",
-        maxZoom: 24,
-      },
-    );
-
-    tileLayer.on("tileerror", () => {
-      if (tileLayer) {
-        map.removeLayer(tileLayer);
-        tileLayer = null;
-        activarModoOffline();
-      }
-    });
-
-    tileLayer.addTo(map);
-  }
-
-  function activarModoOffline() {
-    document.getElementById("map").style.background = "#0a0a0a";
-
-    const gridLayer = L.layerGroup().addTo(map);
-    map.on("moveend zoomend", () => dibujarGrilla(gridLayer));
-    dibujarGrilla(gridLayer);
-
-    const aviso = document.createElement("div");
-    aviso.style.cssText = [
-      "position:fixed",
-      "top:60px",
-      "left:50%",
-      "transform:translateX(-50%)",
-      "background:#2b1a0d",
-      "border:1px solid #5c3a1a",
-      "color:#ffb300",
-      "padding:6px 14px",
-      "border-radius:5px",
-      "font-size:11px",
-      "font-weight:700",
-      "z-index:1000",
-      "pointer-events:none",
-    ].join(";");
-    aviso.innerHTML =
-      '<i class="fas fa-wifi" style="text-decoration:line-through;margin-right:5px"></i>MODO OFFLINE — sin mapa base';
-    document.body.appendChild(aviso);
-  }
-
   function dibujarGrilla(layer) {
     layer.clearLayers();
     const bounds = map.getBounds();
     const zoom = map.getZoom();
     const celdaMetros =
-      zoom >= 18
-        ? 10
-        : zoom >= 17
-          ? 20
-          : zoom >= 16
-            ? 50
-            : zoom >= 15
-              ? 100
-              : 200;
+      zoom >= 18 ? 10 :
+      zoom >= 17 ? 20 :
+      zoom >= 16 ? 50 :
+      zoom >= 15 ? 100 : 200;
     const R = 6371000;
     const latCentro = (bounds.getNorth() + bounds.getSouth()) / 2;
     const celdaLat = (celdaMetros / R) * (180 / Math.PI);
-    const celdaLon =
-      ((celdaMetros / R) * (180 / Math.PI)) /
+    const celdaLon = ((celdaMetros / R) * (180 / Math.PI)) /
       Math.cos((latCentro * Math.PI) / 180);
     const latMin = Math.floor(bounds.getSouth() / celdaLat) * celdaLat;
-    const latMax = Math.ceil(bounds.getNorth() / celdaLat) * celdaLat;
-    const lonMin = Math.floor(bounds.getWest() / celdaLon) * celdaLon;
-    const lonMax = Math.ceil(bounds.getEast() / celdaLon) * celdaLon;
+    const latMax = Math.ceil(bounds.getNorth()  / celdaLat) * celdaLat;
+    const lonMin = Math.floor(bounds.getWest()  / celdaLon) * celdaLon;
+    const lonMax = Math.ceil(bounds.getEast()   / celdaLon) * celdaLon;
     const estilo = { color: "#1a1a1a", weight: 1, opacity: 1 };
     for (let lat = latMin; lat <= latMax; lat += celdaLat) {
-      L.polyline(
-        [
-          [lat, lonMin],
-          [lat, lonMax],
-        ],
-        estilo,
-      ).addTo(layer);
+      L.polyline([[lat, lonMin],[lat, lonMax]], estilo).addTo(layer);
     }
     for (let lon = lonMin; lon <= lonMax; lon += celdaLon) {
-      L.polyline(
-        [
-          [latMin, lon],
-          [latMax, lon],
-        ],
-        estilo,
-      ).addTo(layer);
+      L.polyline([[latMin, lon],[latMax, lon]], estilo).addTo(layer);
     }
   }
 
-  // Verificar conectividad
-  fetch("https://tile.openstreetmap.org/0/0/0.png", {
-    method: "HEAD",
-    mode: "no-cors",
-    signal: AbortSignal.timeout(3000),
-  })
-    .then(() => iniciarTiles())
-    .catch(() => {
-      console.log("[VistaX Mapa] Sin internet — modo offline");
-      activarModoOffline();
-    });
+  document.getElementById("map").style.background = "#080808";
+  const gridLayer = L.layerGroup().addTo(map);
+  map.on("moveend zoomend", () => dibujarGrilla(gridLayer));
+  dibujarGrilla(gridLayer);
 
   // ============================================================
   // BOTÓN DE SEGUIMIENTO GPS
@@ -213,15 +136,60 @@ const MapEngine = (() => {
 
   crearBotonSeguir();
 
+  // ── MARCADOR DEL TRACTOR ──
+  const tractorIcon = L.divIcon({
+    className: "",
+    html: `<div style="
+      width:14px;height:20px;
+      background:#00e676;
+      border-radius:3px 3px 2px 2px;
+      border:2px solid #007d3a;
+      position:relative;
+      box-shadow:0 0 0 2px rgba(0,230,118,.25);
+    ">
+      <div style="
+        position:absolute;top:-5px;left:50%;transform:translateX(-50%);
+        width:0;height:0;
+        border-left:4px solid transparent;
+        border-right:4px solid transparent;
+        border-bottom:6px solid #00e676;
+      "></div>
+    </div>`,
+    iconSize: [14, 25],
+    iconAnchor: [7, 20],
+  });
+  let tractorMarker = null;
+
+  function moverTractor(lat, lon, headingGrados) {
+    if (!tractorMarker) {
+      tractorMarker = L.marker([lat, lon], {
+        icon: tractorIcon,
+        zIndexOffset: 1000,
+      }).addTo(map);
+    } else {
+      tractorMarker.setLatLng([lat, lon]);
+    }
+    // Rotar el ícono según el heading
+    const el = tractorMarker.getElement();
+    if (el) el.style.transform += ` rotate(${headingGrados}deg)`;
+  }
+
   // ============================================================
   // GEOMETRÍA
   // ============================================================
   function desplazarPunto(lat, lon, headingGrados, offsetMetros) {
     const R = 6371000;
+
+    // Bearing perpendicular al avance (derecha = heading + 90)
+    // En bearing geográfico: 0=Norte, 90=Este, sentido horario
+    // cos(bearing) → componente Norte (lat)
+    // sin(bearing) → componente Este (lon)
     const perpRad = (((headingGrados + 90) % 360) * Math.PI) / 180;
     const latRad = (lat * Math.PI) / 180;
+
     const dLat = (offsetMetros * Math.cos(perpRad)) / R;
     const dLon = (offsetMetros * Math.sin(perpRad)) / (R * Math.cos(latRad));
+
     return [lat + dLat * (180 / Math.PI), lon + dLon * (180 / Math.PI)];
   }
 
@@ -284,9 +252,6 @@ const MapEngine = (() => {
     const offsets = calcularOffsets();
     let spmTotal = 0,
       countSpm = 0;
-
-    // FIX #3: recalcular alertasActivas en este punto (no acumular)
-    let alertasEnEstePunto = 0;
 
     Object.values(surcos).forEach((v) => {
       const s = parseFloat(v) || 0;
@@ -359,7 +324,9 @@ const MapEngine = (() => {
       capas.surcos.addLayer(circle);
 
       if (alerta) {
-        alertasEnEstePunto++;
+        alertasCount++;
+        const elAlertas = document.getElementById("hkpi-alertas");
+        if (elAlertas) elAlertas.textContent = alertasCount;
         capas.alertas.addLayer(
           L.circleMarker([latSurco, lonSurco], {
             radius: 7,
@@ -372,13 +339,8 @@ const MapEngine = (() => {
       }
     });
 
-    // FIX #3: actualizar alertas con el máximo del punto actual
-    // (evita que el contador crezca indefinidamente sin resetear)
-    if (alertasEnEstePunto > 0) {
-      alertasActivas = Math.max(alertasActivas, alertasEnEstePunto);
-      const elAlertas = document.getElementById("hkpi-alertas");
-      if (elAlertas) elAlertas.textContent = alertasActivas;
-    }
+    // Mover marcador del tractor
+    moverTractor(latGPS, lonGPS, heading);
 
     // Seguimiento GPS
     ultimaPosicion = [latGPS, lonGPS];
@@ -409,26 +371,10 @@ const MapEngine = (() => {
     trackLine = null;
     centrado = false;
     spmMax = 0;
-    // FIX #2: también actualizar el DOM al resetear
-    alertasActivas = 0;
+    alertasCount = 0;
     totalPuntos = 0;
     siguiendoGPS = true;
     ultimaPosicion = null;
-
-    // Actualizar KPIs del header del mapa
-    const elAlertas = document.getElementById("hkpi-alertas");
-    const elPts = document.getElementById("hkpi-pts");
-    const elSpm = document.getElementById("hkpi-spm");
-    const elHa = document.getElementById("hkpi-ha");
-    const elMax = document.getElementById("leg-max");
-    const elMid = document.getElementById("leg-mid");
-    if (elAlertas) elAlertas.textContent = "0";
-    if (elPts)     elPts.textContent = "0";
-    if (elSpm)     elSpm.textContent = "—";
-    if (elHa)      elHa.textContent = "— ha";
-    if (elMax)     elMax.textContent = "óptimo+";
-    if (elMid)     elMid.textContent = "—";
-
     if (btnSeguir) {
       btnSeguir.style.color = "var(--accent)";
       btnSeguir.style.borderColor = "#1a5c35";

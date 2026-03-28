@@ -36,7 +36,7 @@ let bufferPuntos = [];
  * @param {string} cultivo  - Cultivo (ej: "Soja", "Maiz")
  * @param {number} anchoPasada - Distancia entre surcos en metros
  */
-function iniciarLote(nombre, cultivo, anchoPasada = ANCHO_PASADA_M) {
+function iniciarLote(nombre, cultivo, anchoPasada = ANCHO_PASADA_M, meta = {}) {
   const ts = Date.now();
   const id = `lote_${ts}`;
 
@@ -44,9 +44,12 @@ function iniciarLote(nombre, cultivo, anchoPasada = ANCHO_PASADA_M) {
     id,
     nombre,
     cultivo,
-    startTs: ts,
+    variedad:   meta.variedad  || "",
+    estab:      meta.estab     || "",
+    inicio:     new Date(ts).toISOString(),
+    startTs:    ts,
     anchoPasada: parseFloat(anchoPasada) || ANCHO_PASADA_M,
-    filePath: path.join(LOTES_DIR, `${id}.json`),
+    filePath:   path.join(LOTES_DIR, `${id}.json`),
   };
 
   bufferPuntos = [];
@@ -382,32 +385,11 @@ function _distanciaMetros(lat1, lon1, lat2, lon2) {
       Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-/**
- * Resetea el buffer de puntos del lote activo sin cerrarlo.
- * Se llama cuando el operador borra el pintado en AOG (Contour.txt vacío).
- * El lote sigue abierto — solo se limpian los puntos acumulados en memoria.
- * El archivo .json en disco también se sobreescribe con el buffer vacío.
- */
-function resetearMapa() {
-  if (!loteActivo) return;
 
-  bufferPuntos = [];
-  ultimaPosGPS = null;
-  estadoSensores = {};
-
-  // Sobreescribir en disco con buffer vacío
-  _persistirLote();
-
-  console.log(
-    `\x1b[35m[MapRecorder]\x1b[0m Mapa reseteado — lote continúa: ${loteActivo.nombre}`,
-  );
-  return { loteId: loteActivo.id, nombre: loteActivo.nombre };
-}
 // ============================================================
 module.exports = {
   iniciarLote,
   cerrarLote,
-  resetearMapa,
   actualizarGPS,
   actualizarSensor,
   getGeoJSONLive,

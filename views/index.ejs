@@ -2,36 +2,109 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>VistaX - Monitor de Siembra</title>
     <link rel="stylesheet" href="/css/all.min.css" />
     <link rel="stylesheet" href="/css/vistax.css" />
+    <link rel="stylesheet" href="/css/vistax_v2.css" />
   </head>
   <body>
     <div class="vistax-app">
       <%- include('partials/header') %>
 
-      <main class="monitor-wrapper">
-        <div class="monitor-grid" id="main-monitor"></div>
+      <main class="monitor-wrapper-v2">
+
+        <!-- Barra info (sin colapso) -->
+        <div class="strip-ctrl" style="cursor:default">
+          <span class="strip-ctrl-lbl" id="strip-lbl">MONITOR DE SURCOS</span>
+          <button class="strip-ctrl-btn" onclick="cambiarModo()">MODO</button>
+        </div>
+
+        <!-- Grid de surcos — ocupa todo el espacio disponible -->
+        <div class="monitor-grid" id="main-monitor" style="flex:1;min-height:0;"></div>
+
       </main>
 
       <%- include('partials/footer') %>
     </div>
 
     <%- include('partials/config_modal') %>
+    <%- include('partials/modal_lote') %>
+
+    <!-- Popup trigger -->
+    <div id="trigger-overlay" class="trigger-overlay" style="display:none">
+      <div class="trigger-popup">
+        <div class="trigger-popup-header">
+          <span class="trigger-pulse"></span>
+          <span id="trigger-header-txt">SIEMBRA DETECTADA — INICIÁ EL LOTE</span>
+        </div>
+        <div class="trigger-popup-body">
+          <div class="tp-field">
+            <label>Nombre del Lote <span class="req">*</span></label>
+            <input id="trigger-inp-nombre" type="text" placeholder="Ej: La Paloma Norte" autocomplete="off" spellcheck="false" oninput="this.style.borderColor=''"/>
+          </div>
+          <div class="tp-field">
+            <label>Cultivo <span class="req">*</span></label>
+            <select id="trigger-inp-cultivo">
+              <option value="">— Seleccionar —</option>
+              <option value="maiz">Maíz</option>
+              <option value="soja">Soja</option>
+              <option value="girasol">Girasol</option>
+              <option value="sorgo">Sorgo</option>
+              <option value="trigo">Trigo</option>
+              <option value="cebada">Cebada</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="tp-row-2">
+            <div class="tp-field">
+              <label>Variedad</label>
+              <input id="trigger-inp-variedad" type="text" placeholder="DK7210" autocomplete="off"/>
+            </div>
+            <div class="tp-field">
+              <label>Establecimiento</label>
+              <input id="trigger-inp-estab" type="text" placeholder="Los Aromos" autocomplete="off"/>
+            </div>
+          </div>
+        </div>
+        <div class="trigger-popup-actions">
+          <button class="tp-btn-ghost" onclick="TriggerManager.posponer()">
+            <i class="fas fa-clock"></i> Posponer
+          </button>
+          <button class="tp-btn-primary" onclick="TriggerManager.confirmar()">
+            <i class="fas fa-play"></i> Iniciar Lote
+          </button>
+        </div>
+      </div>
+    </div>
 
     <script>
-      window.APP_CONFIG    = <%- JSON.stringify(config || {}) %>;
-      window.LOTE_ACTIVO   = <%- JSON.stringify(loteActivo || null) %>;
-      <%# Calculamos la cantidad de surcos de semilla para elegir modo de render %>
-      window.TOTAL_SURCOS  = <%- (config && config.mapeo_sensores) ? config.mapeo_sensores.filter(s => s.tipo === 'semilla' || s.tipo === 'ferti_linea' || s.tipo === 'ferti_costado').length : 0 %>;
+      window.APP_CONFIG   = <%- JSON.stringify(config || {}) %>;
+      window.LOTE_ACTIVO  = <%- JSON.stringify(loteActivo || null) %>;
+      window.TOTAL_SURCOS = <%- (config && config.mapeo_sensores)
+        ? config.mapeo_sensores.filter(s =>
+            s.tipo === 'semilla' || s.tipo === 'ferti_linea' || s.tipo === 'ferti_costado'
+          ).length
+        : 0 %>;
+
+      let _modo = 0;
+      function cambiarModo() {
+        _modo = (_modo + 1) % 3;
+        const m = document.getElementById('main-monitor');
+        m.classList.remove('modo-compact', 'modo-mini');
+        if (_modo === 1) m.classList.add('modo-compact');
+        if (_modo === 2) m.classList.add('modo-mini');
+        const lbl = ['NORMAL', 'COMPACTO', 'MINI'][_modo];
+        document.getElementById('strip-lbl').textContent =
+          `MONITOR · ${window.TOTAL_SURCOS} SURCOS · ${lbl}`;
+      }
     </script>
+
     <script src="/socket.io/socket.io.js?v=3"></script>
-    <script src="/js/render_engine.js?v=3"></script>
+    <script src="/js/lote_manager.js?v=2"></script>
+    <script src="/js/trigger_manager.js?v=1"></script>
+    <script src="/js/render_engine.js?v=4"></script>
     <script src="/js/config_modal.js?v=3"></script>
-    <script src="/js/ota_functions_v3.js"></script>
+    <script src="/js/ota_functions_v3.js?v=3"></script>
   </body>
 </html>

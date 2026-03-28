@@ -1,0 +1,199 @@
+/* ============================================================
+   VistaX — Estilos del modal de lote y footer activo
+   Agregar al final de vistax.css
+   ============================================================ */
+
+/* ── Footer: botón lote clickeable ── */
+.lote-info {
+  cursor: pointer;
+  padding: 0 12px;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.lote-info:hover {
+  background: rgba(255,255,255,.06);
+}
+.lote-info.activo {
+  color: var(--success, #4caf50);
+}
+.lote-info.activo i.fa-seedling {
+  color: var(--success, #4caf50);
+}
+
+/* ── Overlay del modal ── */
+.vx-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.72);
+  display: flex;
+  align-items: flex-end;        /* sale desde abajo como un sheet */
+  justify-content: center;
+  z-index: 1200;
+  backdrop-filter: blur(3px);
+}
+
+/* ── Caja del modal ── */
+.vx-modal-box {
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 480px;
+  padding: 0 0 env(safe-area-inset-bottom);
+  animation: vx-slide-up .22s ease;
+}
+
+@keyframes vx-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Header del modal ── */
+.vx-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #232323;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent, #00e5ff);
+}
+.vx-modal-close {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.vx-modal-close:hover { color: #fff; }
+
+/* ── Grilla de campos del formulario ── */
+.vx-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 18px 20px 4px;
+}
+
+.vx-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.vx-field label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  color: #888;
+  text-transform: uppercase;
+}
+.vx-field .req { color: var(--danger, #f44336); }
+
+.vx-field input,
+.vx-field select {
+  background: #1c1c1c;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #eee;
+  font-size: 14px;
+  padding: 9px 11px;
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.vx-field input::placeholder { color: #444; }
+.vx-field input:focus,
+.vx-field select:focus { border-color: var(--accent, #00e5ff); }
+.vx-field select option { background: #1c1c1c; }
+
+/* ── Acciones del modal ── */
+.vx-modal-actions {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px 20px;
+  justify-content: flex-end;
+}
+
+.vx-btn {
+  border: none;
+  border-radius: 7px;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: opacity .15s, transform .1s;
+  font-family: inherit;
+}
+.vx-btn:active { transform: scale(.97); }
+
+.vx-btn-primary {
+  background: var(--accent, #00e5ff);
+  color: #000;
+}
+.vx-btn-primary:hover  { opacity: .88; }
+.vx-btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+.vx-btn-ghost {
+  background: #222;
+  color: #aaa;
+  border: 1px solid #333;
+}
+.vx-btn-ghost:hover { background: #2a2a2a; color: #eee; }
+
+.vx-btn-danger {
+  background: var(--danger, #f44336);
+  color: #fff;
+}
+.vx-btn-danger:hover { opacity: .88; }
+
+/* ── Panel lote activo ── */
+.vx-lote-activo-info {
+  padding: 14px 20px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vx-lote-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #1e1e1e;
+}
+.vx-lote-row:last-child { border-bottom: none; }
+.vx-lote-label {
+  font-size: 11px;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.vx-lote-value {
+  font-size: 14px;
+  color: #eee;
+  font-weight: 600;
+  text-align: right;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Mobile: ancho completo ── */
+@media (max-width: 500px) {
+  .vx-form-grid { grid-template-columns: 1fr; }
+}
