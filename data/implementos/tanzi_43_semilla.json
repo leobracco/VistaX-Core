@@ -5,6 +5,9 @@
     "distancia_entre_surcos": 0.191,
     "factor_k_default": 0.15,
     "p1000": 180,
+    "densidad_objetivo": 14,
+    "objetivos_tren": {},
+    "tolerancia_desvio": 20,
     "rpm_min": 2000,
     "rpm_max": 5000,
     "tolvas": 2,
@@ -17,7 +20,7 @@
       "cable": 1,
       "bajada": 15,
       "tipo": "semilla",
-      "nombre": "Semilla 15",
+      "nombre": "Semilla 13",
       "tren": 2
     },
     {
@@ -25,7 +28,7 @@
       "cable": 2,
       "bajada": 16,
       "tipo": "semilla",
-      "nombre": "Semilla 16",
+      "nombre": "Semilla 14",
       "tren": 2
     },
     {
@@ -33,7 +36,7 @@
       "cable": 3,
       "bajada": 17,
       "tipo": "semilla",
-      "nombre": "Semilla 17",
+      "nombre": "Semilla 15",
       "tren": 2
     },
     {
@@ -41,7 +44,7 @@
       "cable": 4,
       "bajada": 18,
       "tipo": "semilla",
-      "nombre": "Semilla 18",
+      "nombre": "Semilla 16",
       "tren": 2
     },
     {
@@ -49,7 +52,7 @@
       "cable": 5,
       "bajada": 19,
       "tipo": "semilla",
-      "nombre": "Semilla 19",
+      "nombre": "Semilla 17",
       "tren": 2
     },
     {
@@ -57,7 +60,7 @@
       "cable": 6,
       "bajada": 20,
       "tipo": "semilla",
-      "nombre": "Semilla 20",
+      "nombre": "Semilla 18",
       "tren": 2
     },
     {
@@ -65,7 +68,7 @@
       "cable": 7,
       "bajada": 21,
       "tipo": "semilla",
-      "nombre": "Semilla 21",
+      "nombre": "Semilla 19",
       "tren": 2
     },
     {
@@ -129,7 +132,7 @@
       "cable": 1,
       "bajada": 22,
       "tipo": "semilla",
-      "nombre": "Semilla 22",
+      "nombre": "Semilla 20",
       "tren": 2
     },
     {
@@ -137,7 +140,7 @@
       "cable": 2,
       "bajada": 23,
       "tipo": "semilla",
-      "nombre": "Semilla 23",
+      "nombre": "Semilla 21",
       "tren": 2
     },
     {
@@ -145,7 +148,7 @@
       "cable": 3,
       "bajada": 24,
       "tipo": "semilla",
-      "nombre": "Semilla 24",
+      "nombre": "Semilla 22",
       "tren": 1
     },
     {
@@ -153,7 +156,7 @@
       "cable": 4,
       "bajada": 25,
       "tipo": "semilla",
-      "nombre": "Semilla 25",
+      "nombre": "Semilla 23",
       "tren": 1
     },
     {
@@ -161,7 +164,7 @@
       "cable": 5,
       "bajada": 26,
       "tipo": "semilla",
-      "nombre": "Semilla 26",
+      "nombre": "Semilla 24",
       "tren": 1
     },
     {
@@ -169,7 +172,7 @@
       "cable": 6,
       "bajada": 27,
       "tipo": "semilla",
-      "nombre": "Semilla 27",
+      "nombre": "Semilla 25",
       "tren": 1
     },
     {
@@ -177,7 +180,7 @@
       "cable": 7,
       "bajada": 28,
       "tipo": "semilla",
-      "nombre": "Semilla 28",
+      "nombre": "Semilla 26",
       "tren": 1
     },
     {
@@ -185,7 +188,7 @@
       "cable": 1,
       "bajada": 29,
       "tipo": "semilla",
-      "nombre": "Semilla 29",
+      "nombre": "Semilla 27",
       "tren": 1
     },
     {
@@ -193,7 +196,7 @@
       "cable": 2,
       "bajada": 30,
       "tipo": "semilla",
-      "nombre": "Semilla 30",
+      "nombre": "Semilla 28",
       "tren": 1
     },
     {
@@ -201,7 +204,7 @@
       "cable": 3,
       "bajada": 31,
       "tipo": "semilla",
-      "nombre": "Semilla 31",
+      "nombre": "Semilla 29",
       "tren": 1
     },
     {
@@ -209,7 +212,7 @@
       "cable": 4,
       "bajada": 32,
       "tipo": "semilla",
-      "nombre": "Semilla 32",
+      "nombre": "Semilla 30",
       "tren": 1
     },
     {
@@ -217,7 +220,7 @@
       "cable": 5,
       "bajada": 33,
       "tipo": "semilla",
-      "nombre": "Semilla 33",
+      "nombre": "Semilla 31",
       "tren": 1
     },
     {
@@ -225,7 +228,7 @@
       "cable": 6,
       "bajada": 34,
       "tipo": "semilla",
-      "nombre": "Semilla 34",
+      "nombre": "Semilla 32",
       "tren": 1
     },
     {
@@ -233,120 +236,8 @@
       "cable": 7,
       "bajada": 35,
       "tipo": "semilla",
-      "nombre": "Semilla 35",
+      "nombre": "Semilla 33",
       "tren": 1
-    },
-    {
-      "uid": "VX-S3-B1",
-      "cable": 1,
-      "bajada": 36,
-      "tipo": "semilla",
-      "nombre": "Semilla 36",
-      "tren": 1
-    },
-    {
-      "uid": "VX-S3-B1",
-      "cable": 2,
-      "bajada": 37,
-      "tipo": "semilla",
-      "nombre": "Semilla 37",
-      "tren": 1
-    },
-    {
-      "uid": "VX-S3-B1",
-      "cable": 3,
-      "bajada": 38,
-      "tipo": "semilla",
-      "nombre": "Semilla 38",
-      "tren": 1
-    },
-    {
-      "uid": "VX-S3-B1",
-      "cable": 4,
-      "bajada": 39,
-      "tipo": "semilla",
-      "nombre": "Semilla 39",
-      "tren": 1
-    },
-    {
-      "uid": "VX-S3-B1",
-      "cable": 5,
-      "bajada": 40,
-      "tipo": "semilla",
-      "nombre": "Semilla 40",
-      "tren": 1
-    },
-    {
-      "uid": "VX-S3-B1",
-      "cable": 6,
-      "bajada": 41,
-      "tipo": "semilla",
-      "nombre": "Semilla 41",
-      "tren": 1
-    },
-    {
-      "uid": "VX-S3-B1",
-      "cable": 7,
-      "bajada": 42,
-      "tipo": "semilla",
-      "nombre": "Semilla 42",
-      "tren": 1
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 1,
-      "bajada": 8,
-      "tipo": "semilla",
-      "nombre": "Semilla 8",
-      "tren": 2
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 2,
-      "bajada": 9,
-      "tipo": "semilla",
-      "nombre": "Semilla 9",
-      "tren": 2
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 3,
-      "bajada": 10,
-      "tipo": "semilla",
-      "nombre": "Semilla 10",
-      "tren": 2
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 4,
-      "bajada": 11,
-      "tipo": "semilla",
-      "nombre": "Semilla 11",
-      "tren": 2
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 5,
-      "bajada": 12,
-      "tipo": "semilla",
-      "nombre": "Semilla 12",
-      "tren": 2
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 6,
-      "bajada": 13,
-      "tipo": "semilla",
-      "nombre": "Semilla 13",
-      "tren": 2
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 7,
-      "bajada": 14,
-      "tipo": "semilla",
-      "nombre": "Semilla 14",
-      "tren": 2
     },
     {
       "uid": "VX-S3-A4",
@@ -387,6 +278,148 @@
       "tipo": "tolva_vacia",
       "nombre": "Tolva 2",
       "tren": 1
+    },
+    {
+      "uid": "VX-S3-A4",
+      "cable": 6,
+      "bajada": 1,
+      "tipo": "ferti_linea",
+      "nombre": "Ferti L 1",
+      "tren": 1
+    },
+    {
+      "uid": "VX-S3-A4",
+      "cable": 7,
+      "bajada": 2,
+      "tipo": "ferti_costado",
+      "nombre": "Ferti C 1",
+      "tren": 1
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 1,
+      "bajada": 8,
+      "tipo": "semilla",
+      "nombre": "Semilla 8",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 2,
+      "bajada": 9,
+      "tipo": "ferti_linea",
+      "nombre": "Ferti L 2",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 3,
+      "bajada": 10,
+      "tipo": "ferti_costado",
+      "nombre": "Ferti C 2",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 4,
+      "bajada": 11,
+      "tipo": "semilla",
+      "nombre": "Semilla 9",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 5,
+      "bajada": 12,
+      "tipo": "semilla",
+      "nombre": "Semilla 10",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 6,
+      "bajada": 13,
+      "tipo": "semilla",
+      "nombre": "Semilla 11",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DE4EB580",
+      "cable": 7,
+      "bajada": 14,
+      "tipo": "semilla",
+      "nombre": "Semilla 12",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 1,
+      "bajada": 36,
+      "tipo": "ferti_linea",
+      "nombre": "Ferti L 3",
+      "tren": 1,
+      "is_active": true
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 2,
+      "bajada": 37,
+      "tipo": "ferti_costado",
+      "nombre": "Ferti C 3",
+      "tren": 1,
+      "is_active": true
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 3,
+      "bajada": 38,
+      "tipo": "semilla",
+      "nombre": "Semilla 34",
+      "tren": 1,
+      "is_active": true
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 4,
+      "bajada": 39,
+      "tipo": "semilla",
+      "nombre": "Semilla 35",
+      "tren": 1,
+      "is_active": true
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 5,
+      "bajada": 40,
+      "tipo": "semilla",
+      "nombre": "Semilla 36",
+      "tren": 1,
+      "is_active": true
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 6,
+      "bajada": 41,
+      "tipo": "semilla",
+      "nombre": "Semilla 37",
+      "tren": 1,
+      "is_active": true
+    },
+    {
+      "uid": "VX-S3-B1",
+      "cable": 7,
+      "bajada": 42,
+      "tipo": "semilla",
+      "nombre": "Semilla 38",
+      "tren": 1,
+      "is_active": true
     }
   ]
 }

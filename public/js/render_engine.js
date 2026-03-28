@@ -1,36 +1,22 @@
 // ============================================================
-// VistaX — render_engine.js  v4
-//
-// CAMBIOS:
-//   1. Toggle lote: botón dual verde/rojo con timer transcurrido
-//   2. Trenes unificados: NO se dividen visualmente, cada tren
-//      tiene switch Habilitado/Deshabilitado inline
-//   3. Sensores omitibles: click derecho o long-press en surco
-//      → "Omitir sensor" (modo mantenimiento)
-//   4. Alarmas: sensores omitidos NO disparan buzzer ni alerta
-//   5. KPI: "36 / 43 Online" dinámico en header
+// VistaX — render_engine.js  v5.1
+// FIX: IDs incluyen tren → surco-col-T{tren}-{bajada}
 // ============================================================
 
 const socket = io();
 window.socket = socket;
 
-// ============================================================
-// ESTADO GLOBAL
-// ============================================================
-let fallasActivas   = new Set();
-let surcosConFalla  = new Set();
-let datosSurcos     = {};
-let modoCompacto    = 'normal';
-let isMuted         = false;
-let playingAlarm    = false;
+let fallasActivas = new Set();
+let surcosConFalla = new Set();
+let datosSurcos = {};
+let modoCompacto = 'normal';
+let isMuted = false;
+let playingAlarm = false;
+let trenesDeshabilitados = new Set();
+let sensoresOmitidos = new Set();
+let loteTimerInterval = null;
+let loteInicioTs = null;
 
-// ═══ NUEVO: Estado de trenes y sensores omitidos ═══
-let trenesDeshabilitados = new Set();     // trenes apagados por el usuario
-let sensoresOmitidos     = new Set();     // bajadas marcadas como "omitir"
-let loteTimerInterval    = null;
-let loteInicioTs         = null;
-
-// Cargar omisiones desde localStorage
 try {
   const saved = localStorage.getItem('vx_sensores_omitidos');
   if (saved) sensoresOmitidos = new Set(JSON.parse(saved));
@@ -46,51 +32,42 @@ function _guardarOmisiones() {
 }
 
 const TIPOS_ESPECIALES = {
-  rotacion_eje:       { icono: "fas fa-cogs",        unidad: "RPM"    },
-  turbina:            { icono: "fas fa-fan",          unidad: "RPM"    },
-  bajada_herramienta: { icono: "fas fa-arrow-down",   unidad: "ESTADO" },
-  bateria:            { icono: "fas fa-car-battery",  unidad: "V"      },
-  tolva_vacia:        { icono: "fas fa-archive",      unidad: "ESTADO" },
+  rotacion_eje: { icono: "fas fa-cogs", unidad: "RPM" },
+  turbina: { icono: "fas fa-fan", unidad: "RPM" },
+  bajada_herramienta: { icono: "fas fa-arrow-down", unidad: "ESTADO" },
+  bateria: { icono: "fas fa-car-battery", unidad: "V" },
+  tolva_vacia: { icono: "fas fa-archive", unidad: "ESTADO" },
 };
 
-// ============================================================
-// AUDIO
-// ============================================================
+function _sensorKey(bajada, tren) { return `T${tren || 1}-${bajada}`; }
+
+function _buscarTren(bajada, tipo) {
+  const cfg = APP_CONFIG?.mapeo_sensores?.find(s => s.bajada === parseInt(bajada) && s.tipo === tipo);
+  return cfg?.tren || 1;
+}
+
 const audioAlarma = document.createElement("audio");
-audioAlarma.id = "audio-alarma";
-audioAlarma.src = "/sounds/alarma1.mp3";
-audioAlarma.loop = true;
+audioAlarma.id = "audio-alarma"; audioAlarma.src = "/sounds/alarma1.mp3"; audioAlarma.loop = true;
 document.body.appendChild(audioAlarma);
 
 window.toggleMute = function () {
   isMuted = !isMuted;
   const icon = document.querySelector(".actions .btn-tool i.fa-volume-up, .actions .btn-tool i.fa-volume-mute");
-  if (icon) {
-    icon.className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up";
-    icon.style.color = isMuted ? "var(--danger)" : "";
-  }
+  if (icon) { icon.className = isMuted ? "fas fa-volume-mute" : "fas fa-volume-up"; icon.style.color = isMuted ? "var(--danger)" : ""; }
   isMuted ? audioAlarma.pause() : gestionarSonidoAlarma();
 };
 
 function gestionarSonidoAlarma() {
   if (isMuted) return;
-  if (fallasActivas.size > 0) {
-    if (!playingAlarm) {
-      audioAlarma.play().catch(() => {});
-      playingAlarm = true;
-    }
-  } else {
-    audioAlarma.pause();
-    audioAlarma.currentTime = 0;
-    playingAlarm = false;
-  }
+  if (fallasActivas.size > 0) { if (!playingAlarm) { audioAlarma.play().catch(() => {}); playingAlarm = true; } }
+  else { audioAlarma.pause(); audioAlarma.currentTime = 0; playingAlarm = false; }
 }
 
-// ============================================================
-// HELPERS: ¿Este sensor está activo?
-// ============================================================
 function _sensorActivo(bajada, tren) {
-  if (sensoresOmitidos.has(parseInt(bajada))) return false;
+  const key = _sensorKey(bajada, tren);
+  const cfg = APP_CONFIG?.mapeo_sensores?.find(s => s.bajada === parseInt(bajada) && (s.tren || 1) === parseInt(tren || 1));
+  if (cfg && cfg.is_active === false) return false;
+  if (sensoresOmitidos.has(key)) return false;
   if (trenesDeshabilitados.has(parseInt(tren || 1))) return false;
   return true;
 }
@@ -99,11 +76,9 @@ function _contarSensoresOnline() {
   if (!APP_CONFIG?.mapeo_sensores) return { total: 0, activos: 0 };
   const tiposSiembra = ['semilla', 'ferti_linea', 'ferti_costado'];
   const todos = APP_CONFIG.mapeo_sensores.filter(s => tiposSiembra.includes(s.tipo));
-  let activos = 0;
-  todos.forEach(s => {
-    if (_sensorActivo(s.bajada, s.tren)) activos++;
-  });
-  return { total: todos.length, activos };
+  let total = 0, activos = 0;
+  todos.forEach(s => { if (s.is_active === false) return; total++; if (_sensorActivo(s.bajada, s.tren || 1)) activos++; });
+  return { total, activos };
 }
 
 function _actualizarKPIOnline() {
@@ -113,20 +88,19 @@ function _actualizarKPIOnline() {
   window.TOTAL_SURCOS = activos;
 }
 
-// ============================================================
-// MODO COMPACTO
-// ============================================================
-function detectarModo() {
-  const total = window.TOTAL_SURCOS || 0;
-  if (total > 96) return 'mini';
-  if (total > 48) return 'compact';
-  return 'normal';
+function _objetivoTren(numTren) {
+  const porTren = APP_CONFIG?.setup?.objetivos_tren;
+  if (porTren && porTren[numTren] !== undefined) return parseFloat(porTren[numTren]);
+  return parseFloat(APP_CONFIG?.setup?.densidad_objetivo) || 16;
 }
+
+function _toleranciaDesvio() { return parseFloat(APP_CONFIG?.setup?.tolerancia_desvio) || 20; }
+
+function detectarModo() { const t = window.TOTAL_SURCOS || 0; return t > 96 ? 'mini' : t > 48 ? 'compact' : 'normal'; }
 
 window.toggleModoCompacto = function () {
   const modos = ['normal', 'compact', 'mini'];
-  const idx   = modos.indexOf(modoCompacto);
-  modoCompacto = modos[(idx + 1) % modos.length];
+  modoCompacto = modos[(modos.indexOf(modoCompacto) + 1) % modos.length];
   aplicarModo(modoCompacto);
 };
 
@@ -135,208 +109,76 @@ function aplicarModo(modo) {
   if (!grid) return;
   grid.classList.remove('modo-compact', 'modo-mini');
   if (modo === 'compact') grid.classList.add('modo-compact');
-  if (modo === 'mini')    grid.classList.add('modo-mini');
-  document.querySelectorAll('.surco-id').forEach(el => {
-    el.classList.toggle('par', parseInt(el.textContent) % 2 === 0);
-  });
+  if (modo === 'mini') grid.classList.add('modo-mini');
 }
 
-// ============================================================
-// 1. TOGGLE DE LOTE (Abrir/Cerrar con timer)
-// ============================================================
+// TOGGLE LOTE
 function _inicializarToggleLote() {
   const btn = document.getElementById('btn-toggle-lote');
   if (!btn) return;
-
-  // Si ya hay lote activo al cargar
   if (window.LOTE_ACTIVO?.activo || window.LOTE_ACTIVO?.id) {
     _setLoteVisualActivo(true);
-    loteInicioTs = window.LOTE_ACTIVO.inicio
-      ? new Date(window.LOTE_ACTIVO.inicio).getTime()
-      : Date.now();
+    loteInicioTs = window.LOTE_ACTIVO.inicio ? new Date(window.LOTE_ACTIVO.inicio).getTime() : Date.now();
     _iniciarTimer();
   }
-
   btn.onclick = () => {
-    if (window.LoteManager?.hayLoteActivo()) {
-      // Cerrar lote
-      if (typeof window.cerrarLoteDesdeMonitor === 'function') {
-        window.cerrarLoteDesdeMonitor();
-      }
-    } else {
-      // Abrir modal para iniciar
-      if (typeof window.abrirModalLote === 'function') {
-        window.abrirModalLote();
-      }
-    }
+    if (window.LoteManager?.hayLoteActivo()) { if (typeof window.cerrarLoteDesdeMonitor === 'function') window.cerrarLoteDesdeMonitor(); }
+    else { if (typeof window.abrirModalLote === 'function') window.abrirModalLote(); }
   };
 }
 
 function _setLoteVisualActivo(activo) {
-  const btn    = document.getElementById('btn-toggle-lote');
-  const icon   = document.getElementById('lote-toggle-icon');
-  const label  = document.getElementById('lote-toggle-label');
-  const timer  = document.getElementById('lote-toggle-timer');
-
+  const btn = document.getElementById('btn-toggle-lote'), icon = document.getElementById('lote-toggle-icon'), label = document.getElementById('lote-toggle-label'), timer = document.getElementById('lote-toggle-timer');
   if (!btn) return;
-
-  if (activo) {
-    btn.classList.add('lote-activo');
-    btn.classList.remove('lote-inactivo');
-    btn.title = 'Click para CERRAR lote';
-    if (icon)  icon.className = 'fas fa-stop';
-    if (label) label.textContent = 'GRABANDO';
-    if (timer) timer.style.display = 'inline';
-  } else {
-    btn.classList.remove('lote-activo');
-    btn.classList.add('lote-inactivo');
-    btn.title = 'Click para INICIAR lote';
-    if (icon)  icon.className = 'fas fa-play';
-    if (label) label.textContent = 'SIN LOTE';
-    if (timer) { timer.style.display = 'none'; timer.textContent = '00:00'; }
-    _detenerTimer();
-  }
+  if (activo) { btn.classList.add('lote-activo'); btn.classList.remove('lote-inactivo'); btn.title = 'Click para CERRAR lote'; if (icon) icon.className = 'fas fa-stop'; if (label) label.textContent = 'GRABANDO'; if (timer) timer.style.display = 'inline'; }
+  else { btn.classList.remove('lote-activo'); btn.classList.add('lote-inactivo'); btn.title = 'Click para INICIAR lote'; if (icon) icon.className = 'fas fa-play'; if (label) label.textContent = 'SIN LOTE'; if (timer) { timer.style.display = 'none'; timer.textContent = '00:00'; } _detenerTimer(); }
 }
 
-function _iniciarTimer() {
-  _detenerTimer();
-  if (!loteInicioTs) loteInicioTs = Date.now();
-  loteTimerInterval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - loteInicioTs) / 1000);
-    const h = Math.floor(elapsed / 3600);
-    const m = Math.floor((elapsed % 3600) / 60);
-    const s = elapsed % 60;
-    const timerEl = document.getElementById('lote-toggle-timer');
-    if (timerEl) {
-      timerEl.textContent = h > 0
-        ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
-        : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    }
-  }, 1000);
-}
+function _iniciarTimer() { _detenerTimer(); if (!loteInicioTs) loteInicioTs = Date.now(); loteTimerInterval = setInterval(() => { const e = Math.floor((Date.now() - loteInicioTs) / 1000), h = Math.floor(e / 3600), m = Math.floor((e % 3600) / 60), s = e % 60; const t = document.getElementById('lote-toggle-timer'); if (t) t.textContent = h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }, 1000); }
+function _detenerTimer() { if (loteTimerInterval) { clearInterval(loteTimerInterval); loteTimerInterval = null; } loteInicioTs = null; }
 
-function _detenerTimer() {
-  if (loteTimerInterval) { clearInterval(loteTimerInterval); loteTimerInterval = null; }
-  loteInicioTs = null;
-}
+socket.on('lote_update', (data) => { if (data.activo) { _setLoteVisualActivo(true); loteInicioTs = data.inicio ? new Date(data.inicio).getTime() : Date.now(); _iniciarTimer(); } else { _setLoteVisualActivo(false); } });
 
-// Escuchar lote_update para sincronizar toggle
-socket.on('lote_update', (data) => {
-  if (data.activo) {
-    _setLoteVisualActivo(true);
-    loteInicioTs = data.inicio ? new Date(data.inicio).getTime() : Date.now();
-    _iniciarTimer();
-  } else {
-    _setLoteVisualActivo(false);
-  }
-});
-
-// ============================================================
-// 2. GESTIÓN DE TRENES — switch habilitar/deshabilitar
-// ============================================================
+// TRENES
 function _crearSwitchTren(numTren) {
-  const id = `tren-switch-${numTren}`;
   const checked = !trenesDeshabilitados.has(numTren);
-  return `
-    <label class="tren-switch" title="${checked ? 'Deshabilitar' : 'Habilitar'} tren ${numTren}">
-      <input type="checkbox" id="${id}" ${checked ? 'checked' : ''}
-             onchange="toggleTrenHabilitado(${numTren}, this.checked)">
-      <span class="tren-switch-slider"></span>
-    </label>`;
+  return `<label class="tren-switch" title="${checked ? 'Deshabilitar' : 'Habilitar'} tren ${numTren}"><input type="checkbox" id="tren-switch-${numTren}" ${checked ? 'checked' : ''} onchange="toggleTrenHabilitado(${numTren}, this.checked)"><span class="tren-switch-slider"></span></label>`;
 }
 
-window.toggleTrenHabilitado = function(numTren, habilitado) {
-  if (habilitado) {
-    trenesDeshabilitados.delete(numTren);
-  } else {
-    trenesDeshabilitados.add(numTren);
-  }
+window.toggleTrenHabilitado = function(numTren, hab) {
+  hab ? trenesDeshabilitados.delete(numTren) : trenesDeshabilitados.add(numTren);
   _guardarOmisiones();
-
-  // Actualizar visual de todos los surcos de este tren
   if (APP_CONFIG?.mapeo_sensores) {
     APP_CONFIG.mapeo_sensores.forEach(s => {
       if ((s.tren || 1) === numTren) {
-        const col = document.getElementById(`surco-col-${s.bajada}`);
-        if (col) {
-          col.classList.toggle('sensor-omitido', !habilitado);
-          if (!habilitado) {
-            // Limpiar alarma de este surco
-            const surcoId = `s-${s.tipo}-${s.bajada}`;
-            fallasActivas.delete(surcoId);
-            surcosConFalla.delete(s.bajada);
-          }
-        }
+        const key = _sensorKey(s.bajada, numTren);
+        const col = document.getElementById(`surco-col-${key}`);
+        if (col) { col.classList.toggle('sensor-omitido', !hab); if (!hab) { fallasActivas.delete(`s-${s.tipo}-${s.bajada}`); surcosConFalla.delete(key); } }
       }
     });
   }
-
-  _actualizarKPIOnline();
-  _actualizarTicker();
-  gestionarSonidoAlarma();
+  _actualizarKPIOnline(); _actualizarTicker(); gestionarSonidoAlarma();
 };
 
-// ============================================================
-// 3. OMISIÓN SELECTIVA DE SENSORES (Modo Mantenimiento)
-// ============================================================
-window.toggleOmitirSensor = function(bajada) {
-  bajada = parseInt(bajada);
-  if (sensoresOmitidos.has(bajada)) {
-    sensoresOmitidos.delete(bajada);
-  } else {
-    sensoresOmitidos.add(bajada);
-  }
+// OMISIÓN
+window.toggleOmitirSensor = function(bajada, tren) {
+  tren = parseInt(tren || 1); bajada = parseInt(bajada);
+  const key = _sensorKey(bajada, tren);
+  sensoresOmitidos.has(key) ? sensoresOmitidos.delete(key) : sensoresOmitidos.add(key);
   _guardarOmisiones();
-
-  const col = document.getElementById(`surco-col-${bajada}`);
-  if (col) col.classList.toggle('sensor-omitido', sensoresOmitidos.has(bajada));
-
-  // Limpiar alarma si se omite
-  if (sensoresOmitidos.has(bajada)) {
-    APP_CONFIG.mapeo_sensores?.forEach(s => {
-      if (s.bajada === bajada) {
-        fallasActivas.delete(`s-${s.tipo}-${s.bajada}`);
-        surcosConFalla.delete(bajada);
-      }
-    });
-    gestionarSonidoAlarma();
-  }
-
-  _actualizarKPIOnline();
-  _actualizarTicker();
+  const col = document.getElementById(`surco-col-${key}`);
+  if (col) col.classList.toggle('sensor-omitido', sensoresOmitidos.has(key));
+  if (sensoresOmitidos.has(key)) { APP_CONFIG.mapeo_sensores?.forEach(s => { if (s.bajada === bajada && (s.tren || 1) === tren) { fallasActivas.delete(`s-${s.tipo}-${s.bajada}`); surcosConFalla.delete(key); } }); gestionarSonidoAlarma(); }
+  _actualizarKPIOnline(); _actualizarTicker();
 };
 
-// Context menu para omitir
-function _hookContextMenu(surcoCol, bajada) {
-  surcoCol.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    const omitido = sensoresOmitidos.has(parseInt(bajada));
-    if (confirm(omitido
-      ? `¿Reactivar sensor bajada ${bajada}?`
-      : `¿Omitir sensor bajada ${bajada}? (modo mantenimiento)`)) {
-      toggleOmitirSensor(bajada);
-    }
-  });
-
-  // Long press para mobile
-  let pressTimer;
-  surcoCol.addEventListener('touchstart', (e) => {
-    pressTimer = setTimeout(() => {
-      e.preventDefault();
-      const omitido = sensoresOmitidos.has(parseInt(bajada));
-      if (confirm(omitido
-        ? `¿Reactivar sensor bajada ${bajada}?`
-        : `¿Omitir sensor bajada ${bajada}?`)) {
-        toggleOmitirSensor(bajada);
-      }
-    }, 700);
-  }, { passive: false });
-  surcoCol.addEventListener('touchend', () => clearTimeout(pressTimer));
-  surcoCol.addEventListener('touchmove', () => clearTimeout(pressTimer));
+function _hookContextMenu(surcoCol, bajada, tren) {
+  surcoCol.addEventListener('contextmenu', (e) => { e.preventDefault(); const key = _sensorKey(bajada, tren); if (confirm(sensoresOmitidos.has(key) ? `¿Reactivar bajada ${bajada}?` : `¿Omitir bajada ${bajada}?`)) toggleOmitirSensor(bajada, tren); });
+  let pt; surcoCol.addEventListener('touchstart', (e) => { pt = setTimeout(() => { e.preventDefault(); const key = _sensorKey(bajada, tren); if (confirm(sensoresOmitidos.has(key) ? `¿Reactivar bajada ${bajada}?` : `¿Omitir bajada ${bajada}?`)) toggleOmitirSensor(bajada, tren); }, 700); }, { passive: false }); surcoCol.addEventListener('touchend', () => clearTimeout(pt)); surcoCol.addEventListener('touchmove', () => clearTimeout(pt));
 }
 
 // ============================================================
-// INICIALIZACIÓN DE LA INTERFAZ
+// INICIALIZACIÓN UI
 // ============================================================
 function inicializarUI() {
   if (!APP_CONFIG || !APP_CONFIG.mapeo_sensores) return;
@@ -345,86 +187,70 @@ function inicializarUI() {
   if (txtMaquina) txtMaquina.innerText = APP_CONFIG.nombre || "DESCONOCIDA";
 
   const inputObjetivo = document.getElementById("input-objetivo");
-  if (inputObjetivo && APP_CONFIG.setup?.densidad_objetivo) {
-    inputObjetivo.value = APP_CONFIG.setup.densidad_objetivo;
-  }
+  if (inputObjetivo && APP_CONFIG.setup?.densidad_objetivo) inputObjetivo.value = APP_CONFIG.setup.densidad_objetivo;
 
   modoCompacto = detectarModo();
 
-  const sensoresOrdenados = [...APP_CONFIG.mapeo_sensores].sort((a, b) => a.bajada - b.bajada);
+  const sensoresActivos = APP_CONFIG.mapeo_sensores.filter(s => s.is_active !== false);
+  const sensoresOrdenados = [...sensoresActivos].sort((a, b) => a.bajada - b.bajada);
   const monitorGrid = document.getElementById("main-monitor");
 
+  // N TRENES — orden ascendente
+  const trenesUsados = [...new Set(sensoresOrdenados.filter(s => !TIPOS_ESPECIALES.hasOwnProperty(s.tipo)).map(s => s.tren || 1))].sort((a, b) => a - b);
+
+  trenesUsados.forEach(numTren => {
+    const rowId = `tren-row-${numTren}`;
+    if (document.getElementById(rowId)) return;
+    const wrapper = document.createElement("div");
+    wrapper.className = "tren-row-wrapper";
+    let etiqueta;
+    if (trenesUsados.length === 1) etiqueta = 'TREN';
+    else if (trenesUsados.length === 2) etiqueta = numTren === Math.min(...trenesUsados) ? 'TREN (DELANTERO)' : 'TREN (TRASERO)';
+    else etiqueta = `TREN ${numTren}`;
+    const objTren = _objetivoTren(numTren);
+    wrapper.innerHTML = `<div class="tren-title"><span>${etiqueta} <span class="tren-obj-badge">obj: ${objTren} s/m</span></span><div class="tren-title-actions">${_crearSwitchTren(numTren)}</div></div><div class="tren-row" id="${rowId}"></div>`;
+    monitorGrid.appendChild(wrapper);
+  });
+
+  // CREAR SURCOS — colId incluye TREN
   sensoresOrdenados.forEach((sensor) => {
-    const surcoId  = `s-${sensor.tipo}-${sensor.bajada}`;
-    const colId    = `surco-col-${sensor.bajada}`;
+    const numTren = sensor.tren || 1;
+    const key = _sensorKey(sensor.bajada, numTren);
+    const surcoId = `s-${sensor.tipo}-${sensor.bajada}`;
+    const colId = `surco-col-${key}`;
     const isEspecial = TIPOS_ESPECIALES.hasOwnProperty(sensor.tipo);
 
     if (isEspecial) {
       const container = document.getElementById("tren-especiales");
       if (container && !document.getElementById(surcoId)) {
         const card = document.createElement("div");
-        card.id        = surcoId;
-        card.className = "sensor-especial";
-        card.innerHTML = `
-          <i class="${TIPOS_ESPECIALES[sensor.tipo].icono}"></i>
-          <div class="info">
-            <span>${sensor.nombre || sensor.tipo.replace(/_/g, ' ')}</span>
-            <strong class="val-text">—</strong>
-          </div>`;
+        card.id = surcoId; card.className = "sensor-especial";
+        card.innerHTML = `<i class="${TIPOS_ESPECIALES[sensor.tipo].icono}"></i><div class="info"><span>${sensor.nombre || sensor.tipo.replace(/_/g, ' ')}</span><strong class="val-text">—</strong></div>`;
         container.appendChild(card);
       }
     } else if (monitorGrid) {
-      const numTren = sensor.tren || 1;
-      const rowId   = `tren-row-${numTren}`;
-      let rowContainer = document.getElementById(rowId);
-
-      // ═══ TRENES SIN DIVISIÓN: un solo bloque, sin separar arriba/abajo ═══
-      if (!rowContainer) {
-        const wrapper = document.createElement("div");
-        wrapper.className = "tren-row-wrapper";
-
-        // ═══ NUEVO: título con switch inline ═══
-        wrapper.innerHTML = `
-          <div class="tren-title">
-            <span>TREN ${numTren} ${numTren === 1 ? '(DELANTERO)' : '(TRASERO)'} </span>
-            <div class="tren-title-actions">
-              ${_crearSwitchTren(numTren)}
-            </div>
-          </div>
-          <div class="tren-row" id="${rowId}"></div>`;
-        monitorGrid.appendChild(wrapper);
-        rowContainer = document.getElementById(rowId);
-      }
+      const rowId = `tren-row-${numTren}`;
+      const rowContainer = document.getElementById(rowId);
+      if (!rowContainer) return;
 
       let surcoCol = document.getElementById(colId);
       if (!surcoCol) {
         surcoCol = document.createElement("div");
         surcoCol.id = colId;
         surcoCol.className = "surco-column";
-        surcoCol.onclick = () => abrirDetalleSurco(sensor.bajada, sensor.tipo);
-
-        // Marcar como omitido si ya estaba
-        if (!_sensorActivo(sensor.bajada, numTren)) {
-          surcoCol.classList.add('sensor-omitido');
-        }
-
+        surcoCol.onclick = () => abrirDetalleSurco(sensor.bajada, sensor.tipo, numTren);
+        if (!_sensorActivo(sensor.bajada, numTren)) surcoCol.classList.add('sensor-omitido');
         const numPar = sensor.bajada % 2 === 0;
-        surcoCol.innerHTML = `
-          <div class="surco-id${numPar ? ' par' : ''}">${sensor.bajada}</div>
-          <div class="pills-area"></div>
-          <div class="surco-val-num" id="val-${sensor.bajada}">—</div>`;
+        surcoCol.innerHTML = `<div class="surco-id${numPar ? ' par' : ''}">${sensor.bajada}</div><div class="pills-area"><div class="led-ferti led-ferti-linea" id="led-fl-${key}" title="Ferti Línea"></div><div class="led-ferti led-ferti-costado" id="led-fc-${key}" title="Ferti Costado"></div></div><div class="surco-val-num" id="val-${key}">—</div>`;
         rowContainer.appendChild(surcoCol);
-
-        // Hook context menu para omitir
-        _hookContextMenu(surcoCol, sensor.bajada);
+        _hookContextMenu(surcoCol, sensor.bajada, numTren);
       }
 
       const pillsArea = surcoCol.querySelector(".pills-area");
       if (pillsArea && !document.getElementById(surcoId)) {
         const pill = document.createElement("div");
         pill.id = surcoId;
-        const tipoClass = sensor.tipo === 'ferti_linea'   ? 'pill-ferti-linea' :
-                          sensor.tipo === 'ferti_costado' ? 'pill-ferti-costado' : '';
+        const tipoClass = sensor.tipo === 'ferti_linea' ? 'pill-ferti-linea' : sensor.tipo === 'ferti_costado' ? 'pill-ferti-costado' : '';
         pill.className = `pill-status status-tapado ${tipoClass}`.trim();
         pill.title = sensor.nombre || `${sensor.tipo} #${sensor.bajada}`;
         pillsArea.appendChild(pill);
@@ -435,19 +261,11 @@ function inicializarUI() {
   aplicarModo(modoCompacto);
   _actualizarKPIOnline();
   _inicializarToggleLote();
-
   const btnModo = document.getElementById('btn-modo');
   if (btnModo && (_contarSensoresOnline().total) > 20) btnModo.style.display = 'flex';
 }
 
-window.toggleTren = function (rowId) {
-  const row  = document.getElementById(rowId);
-  const icon = row?.previousElementSibling?.querySelector("i.fa-chevron-up, i.fa-chevron-down");
-  if (!row) return;
-  const oculto = row.style.display === "none";
-  row.style.display = oculto ? "flex" : "none";
-  if (icon) icon.className = oculto ? "fas fa-chevron-up" : "fas fa-chevron-down";
-};
+window.toggleTren = function (rowId) { const row = document.getElementById(rowId); if (row) row.style.display = row.style.display === "none" ? "flex" : "none"; };
 
 inicializarUI();
 
@@ -455,100 +273,72 @@ inicializarUI();
 // RECEPCIÓN DE DATOS EN TIEMPO REAL
 // ============================================================
 socket.on("sensor_update", (data) => {
-  if (!datosSurcos[data.bajada]) {
-    datosSurcos[data.bajada] = { total_semillas: 0, spm: 0 };
-  }
-  datosSurcos[data.bajada].total_semillas += data.nuevas_semillas || 0;
-  datosSurcos[data.bajada].spm = data.spm || 0;
+  const tren = data.tren || _buscarTren(data.bajada, data.tipo);
+  const key = _sensorKey(data.bajada, tren);
+
+  if (!datosSurcos[key]) datosSurcos[key] = { total_semillas: 0, spm: 0, ferti_linea: false, ferti_costado: false };
+  datosSurcos[key].total_semillas += data.nuevas_semillas || 0;
+  datosSurcos[key].spm = data.spm || 0;
+
+  if (data.tipo === 'ferti_linea') { datosSurcos[key].ferti_linea = parseFloat(data.valor) > 0; const led = document.getElementById(`led-fl-${key}`); if (led) led.classList.toggle('led-on', datosSurcos[key].ferti_linea); }
+  if (data.tipo === 'ferti_costado') { datosSurcos[key].ferti_costado = parseFloat(data.valor) > 0; const led = document.getElementById(`led-fc-${key}`); if (led) led.classList.toggle('led-on', datosSurcos[key].ferti_costado); }
 
   const surcoId = `s-${data.tipo}-${data.bajada}`;
-  const el      = document.getElementById(surcoId);
+  const el = document.getElementById(surcoId);
   if (el) {
-    actualizarPastillaEstado(el, data);
-    if (TIPOS_ESPECIALES[data.tipo]) {
-      const valText = el.querySelector(".val-text");
-      if (valText) valText.innerText = data.valor;
-    }
+    actualizarPastillaEstado(el, data, tren, key);
+    if (TIPOS_ESPECIALES[data.tipo]) { const vt = el.querySelector(".val-text"); if (vt) vt.innerText = data.valor; }
   }
 
-  // Modal detalle en vivo
-  const modalDetalle = document.getElementById("surco-modal-detalle");
-  if (modalDetalle?.style.display === "flex" && modalDetalle.dataset.surco == data.bajada) {
-    const elSpm   = document.getElementById("detalle-spm");
-    const elTotal = document.getElementById("detalle-total");
-    if (elSpm)   elSpm.innerText   = data.spm;
-    if (elTotal) elTotal.innerText = datosSurcos[data.bajada].total_semillas.toLocaleString("es-AR");
+  const md = document.getElementById("surco-modal-detalle");
+  if (md?.style.display === "flex" && md.dataset.key === key) {
+    const es = document.getElementById("detalle-spm"), et = document.getElementById("detalle-total");
+    if (es) es.innerText = data.spm;
+    if (et) et.innerText = datosSurcos[key].total_semillas.toLocaleString("es-AR");
   }
 });
 
 socket.on("global_update", (stats) => {
-  if (stats.velocidad !== undefined) {
-    const el = document.getElementById("txt-vel");
-    if (el) el.innerText = parseFloat(stats.velocidad).toFixed(1);
-  }
-  if (stats.promedio !== undefined) {
-    const el = document.getElementById("txt-dosis");
-    if (el) el.innerText = parseFloat(stats.promedio).toFixed(1);
-  }
+  if (stats.velocidad !== undefined) { const el = document.getElementById("txt-vel"); if (el) el.innerText = parseFloat(stats.velocidad).toFixed(1); }
+  if (stats.promedio !== undefined) { const el = document.getElementById("txt-dosis"); if (el) el.innerText = parseFloat(stats.promedio).toFixed(1); }
 });
 
-// ============================================================
-// 4. ALARMAS — Respeta omisiones y trenes deshabilitados
-// ============================================================
-function actualizarPastillaEstado(el, data) {
-  const surcoCol = document.getElementById(`surco-col-${data.bajada}`);
-  const surcoId  = el.id;
-  const bajada   = parseInt(data.bajada);
-
-  // Buscar el tren de este sensor
-  const sensorCfg = APP_CONFIG?.mapeo_sensores?.find(s => s.bajada === bajada);
-  const tren      = sensorCfg?.tren || 1;
-
-  // ═══ CHECK OMISIÓN: si está omitido o tren deshabilitado → NO alertar ═══
+// ALARMAS + DESVÍO
+function actualizarPastillaEstado(el, data, tren, key) {
+  const surcoCol = document.getElementById(`surco-col-${key}`);
+  const surcoId = el.id;
+  const bajada = parseInt(data.bajada);
   const activo = _sensorActivo(bajada, tren);
 
-  el.classList.remove("status-ok", "status-alerta", "status-tapado");
+  el.classList.remove("status-ok", "status-alerta", "status-tapado", "status-desvio");
 
-  if (!activo) {
-    // Sensor omitido: forzar visual tapado, sin alarma
-    el.classList.add("status-tapado");
-    el.style.height = '3%';
-    fallasActivas.delete(surcoId);
-    surcosConFalla.delete(bajada);
-    if (surcoCol) surcoCol.classList.remove("falla");
-    return;
-  }
+  if (!activo) { el.classList.add("status-tapado"); el.style.height = '3%'; fallasActivas.delete(surcoId); surcosConFalla.delete(key); if (surcoCol) surcoCol.classList.remove("falla", "desvio"); return; }
+
+  const spmVal = parseFloat(data.spm) || 0;
+  const objetivo = _objetivoTren(tren);
+  const tolerancia = _toleranciaDesvio();
 
   if (data.alerta) {
-    el.classList.add("status-alerta");
-    fallasActivas.add(surcoId);
-    surcosConFalla.add(bajada);
-    if (surcoCol) surcoCol.classList.add("falla");
-  } else if (parseFloat(data.valor) > 0) {
-    el.classList.add("status-ok");
-    fallasActivas.delete(surcoId);
-    surcosConFalla.delete(bajada);
-    if (surcoCol) surcoCol.classList.remove("falla");
-  } else {
-    el.classList.add("status-tapado");
-    fallasActivas.delete(surcoId);
-    surcosConFalla.delete(bajada);
-    if (surcoCol) surcoCol.classList.remove("falla");
-  }
+    el.classList.add("status-alerta"); fallasActivas.add(surcoId); surcosConFalla.add(key);
+    if (surcoCol) { surcoCol.classList.add("falla"); surcoCol.classList.remove("desvio"); }
+  } else if (spmVal > 0) {
+    const pctDesvio = Math.abs((spmVal - objetivo) / objetivo) * 100;
+    if (objetivo > 0 && pctDesvio > tolerancia) {
+      el.classList.add("status-desvio"); if (surcoCol) { surcoCol.classList.add("desvio"); surcoCol.classList.remove("falla"); }
+      fallasActivas.delete(surcoId); surcosConFalla.delete(key);
+    } else {
+      el.classList.add("status-ok"); fallasActivas.delete(surcoId); surcosConFalla.delete(key);
+      if (surcoCol) surcoCol.classList.remove("falla", "desvio");
+    }
+  } else { el.classList.add("status-tapado"); fallasActivas.delete(surcoId); surcosConFalla.delete(key); if (surcoCol) surcoCol.classList.remove("falla", "desvio"); }
 
-  // Altura proporcional al spm
-  const objetivo  = APP_CONFIG?.setup?.densidad_objetivo || 16;
-  const spmVal    = parseFloat(data.spm) || 0;
-  const pctAltura = data.alerta ? 15
-                  : spmVal === 0 ? 6
-                  : Math.max(10, Math.min(95, (spmVal / objetivo) * 75));
+  const pctAltura = data.alerta ? 15 : spmVal === 0 ? 6 : Math.max(10, Math.min(95, (spmVal / objetivo) * 75));
   el.style.height = pctAltura + '%';
 
-  // Valor debajo del tubo
-  const valEl = document.getElementById('val-' + data.bajada);
-  if (valEl) {
+  const valEl = document.getElementById(`val-${key}`);
+  if (valEl && data.tipo === 'semilla') {
     valEl.textContent = spmVal > 0 ? spmVal : (data.alerta ? '!' : '—');
-    valEl.style.color = data.alerta ? 'var(--danger)' : spmVal > 0 ? '#666' : '#333';
+    valEl.style.color = data.alerta ? 'var(--danger)' : el.classList.contains('status-desvio') ? '#ffb300' : spmVal > 0 ? '#666' : '#333';
   }
 
   _actualizarTicker();
@@ -561,101 +351,39 @@ function _actualizarTicker() {
   const ticker = document.getElementById("alert-ticker");
   if (!ticker) return;
   if (surcosConFalla.size > 0) {
-    const lista = [...surcosConFalla].sort((a, b) => a - b).join(", ");
+    const lista = [...surcosConFalla].map(k => k.split('-')[1]).sort((a, b) => parseInt(a) - parseInt(b)).join(", ");
     ticker.innerText = `FALLA EN SURCO ${lista}`;
     ticker.classList.add("active-alert");
-  } else {
-    ticker.innerText = "SISTEMA VISTAX OPERATIVO";
-    ticker.classList.remove("active-alert");
-  }
+  } else { ticker.innerText = "SISTEMA VISTAX OPERATIVO"; ticker.classList.remove("active-alert"); }
 }
 
-// ============================================================
-// DETALLE DE SURCO
-// ============================================================
-window.abrirDetalleSurco = function (numero, tipo) {
-  const data = datosSurcos[numero] || { total_semillas: 0, spm: 0 };
-  const omitido = sensoresOmitidos.has(parseInt(numero));
+// DETALLE SURCO
+window.abrirDetalleSurco = function (numero, tipo, tren) {
+  tren = tren || _buscarTren(numero, tipo);
+  const key = _sensorKey(numero, tren);
+  const data = datosSurcos[key] || { total_semillas: 0, spm: 0, ferti_linea: false, ferti_costado: false };
+  const omitido = sensoresOmitidos.has(key);
+  const objetivo = _objetivoTren(tren);
+  const sensorCfg = APP_CONFIG?.mapeo_sensores?.find(s => s.bajada === parseInt(numero) && (s.tren || 1) === tren);
 
   let overlay = document.getElementById("surco-modal-detalle");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.id = "surco-modal-detalle";
-    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:9999";
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = "none"; };
-    document.body.appendChild(overlay);
-  }
+  if (!overlay) { overlay = document.createElement("div"); overlay.id = "surco-modal-detalle"; overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:9999"; overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = "none"; }; document.body.appendChild(overlay); }
 
-  overlay.dataset.surco = numero;
-  const objetivo = APP_CONFIG?.setup?.densidad_objetivo || 16;
-  const spm      = parseFloat(data.spm) || 0;
-  const pct      = objetivo > 0 ? Math.min((spm / objetivo) * 100, 200) : 0;
-  const color    = spm === 0 ? '#ff1744' : pct < 70 ? '#ffb300' : pct > 130 ? '#00e5ff' : '#00e676';
+  overlay.dataset.key = key;
+  const spm = parseFloat(data.spm) || 0;
+  const pct = objetivo > 0 ? Math.min((spm / objetivo) * 100, 200) : 0;
+  const desvio = objetivo > 0 ? Math.abs((spm - objetivo) / objetivo * 100).toFixed(0) : 0;
+  const color = spm === 0 ? '#ff1744' : pct < 70 ? '#ffb300' : pct > 130 ? '#00e5ff' : '#00e676';
+  const fl = data.ferti_linea, fc = data.ferti_costado;
 
-  overlay.innerHTML = `
-    <div style="background:#141414;border:1px solid #2a2a2a;border-radius:10px;min-width:260px;max-width:320px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8);">
-      <div style="background:#1e1e1e;padding:14px 18px;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase">${tipo.replace(/_/g,' ')}</div>
-          <div style="font-size:18px;font-weight:900;color:white;">SURCO ${numero}</div>
-        </div>
-        <button onclick="document.getElementById('surco-modal-detalle').style.display='none'" style="background:transparent;border:none;color:#555;font-size:24px;cursor:pointer">&times;</button>
-      </div>
-      <div style="padding:18px;">
-        ${omitido ? '<div style="background:#2b2200;border:1px solid #5c4a00;border-radius:6px;padding:8px;text-align:center;color:#ffb300;font-weight:700;font-size:11px;margin-bottom:12px"><i class="fas fa-wrench"></i> SENSOR OMITIDO (MANTENIMIENTO)</div>' : ''}
-        <div style="text-align:center;margin-bottom:16px;">
-          <div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:6px">Densidad actual</div>
-          <div id="detalle-spm" style="font-size:48px;font-weight:900;color:${color};line-height:1">${spm}</div>
-          <div style="font-size:13px;color:#444;">semillas / metro</div>
-        </div>
-        <div style="background:#0a0a0a;border-radius:4px;overflow:hidden;height:6px;margin-bottom:16px">
-          <div style="height:100%;width:${Math.min(pct,100)}%;background:${color};transition:width .3s;border-radius:4px"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:#333;margin-bottom:16px">
-          <span>0</span><span>Objetivo: ${objetivo}</span><span>${objetivo * 2}</span>
-        </div>
-        <div style="background:#0a0a0a;border:1px solid #1e1e1e;border-radius:6px;padding:12px;text-align:center;">
-          <div style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:4px">Total acumulado</div>
-          <div id="detalle-total" style="font-size:22px;font-weight:700;color:#ccc">${data.total_semillas.toLocaleString("es-AR")}</div>
-        </div>
-        <div style="margin-top:12px;display:flex;gap:8px">
-          <button onclick="toggleOmitirSensor(${numero});document.getElementById('surco-modal-detalle').style.display='none'"
-            style="flex:1;padding:9px;background:${omitido ? '#0d2b1a' : '#2b2200'};border:1px solid ${omitido ? '#1a5c35' : '#5c4a00'};color:${omitido ? '#00e676' : '#ffb300'};border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">
-            <i class="fas fa-${omitido ? 'check' : 'wrench'}"></i> ${omitido ? 'REACTIVAR' : 'OMITIR SENSOR'}
-          </button>
-        </div>
-      </div>
-    </div>`;
+  overlay.innerHTML = `<div style="background:#141414;border:1px solid #2a2a2a;border-radius:10px;min-width:280px;max-width:340px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8);"><div style="background:#1e1e1e;padding:14px 18px;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:10px;color:#555;font-weight:700;text-transform:uppercase">${sensorCfg?.nombre || tipo.replace(/_/g,' ')} · Tren ${tren}</div><div style="font-size:18px;font-weight:900;color:white;">SURCO ${numero}</div></div><button onclick="document.getElementById('surco-modal-detalle').style.display='none'" style="background:transparent;border:none;color:#555;font-size:24px;cursor:pointer">&times;</button></div><div style="padding:18px;">${omitido ? '<div style="background:#2b2200;border:1px solid #5c4a00;border-radius:6px;padding:8px;text-align:center;color:#ffb300;font-weight:700;font-size:11px;margin-bottom:12px"><i class="fas fa-wrench"></i> SENSOR OMITIDO</div>' : ''}<div style="text-align:center;margin-bottom:12px;"><div style="font-size:11px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:6px">Densidad individual</div><div id="detalle-spm" style="font-size:48px;font-weight:900;color:${color};line-height:1">${spm}</div><div style="font-size:13px;color:#444;">semillas / metro</div></div><div style="background:#0a0a0a;border-radius:4px;overflow:hidden;height:6px;margin-bottom:8px"><div style="height:100%;width:${Math.min(pct,100)}%;background:${color};transition:width .3s;border-radius:4px"></div></div><div style="display:flex;justify-content:space-between;font-size:9px;color:#333;margin-bottom:8px"><span>0</span><span>Obj. Tren ${tren}: ${objetivo}</span><span>${objetivo * 2}</span></div><div style="text-align:center;font-size:11px;color:${parseFloat(desvio) > _toleranciaDesvio() ? '#ffb300' : '#444'};margin-bottom:12px">Desvío: ${desvio}%</div><div style="display:flex;gap:12px;justify-content:center;margin:10px 0 6px"><div style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:${fl ? '#00e676' : '#222'};border:1px solid ${fl ? '#00e676' : '#333'};display:inline-block"></span><span style="font-size:9px;color:#555;font-weight:700">FERTI L</span></div><div style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:${fc ? '#42a5f5' : '#222'};border:1px solid ${fc ? '#42a5f5' : '#333'};display:inline-block"></span><span style="font-size:9px;color:#555;font-weight:700">FERTI C</span></div></div><div style="background:#0a0a0a;border:1px solid #1e1e1e;border-radius:6px;padding:12px;text-align:center;"><div style="font-size:9px;color:#555;font-weight:700;text-transform:uppercase;margin-bottom:4px">Total acumulado</div><div id="detalle-total" style="font-size:22px;font-weight:700;color:#ccc">${data.total_semillas.toLocaleString("es-AR")}</div></div><div style="margin-top:12px;display:flex;gap:8px"><button onclick="toggleOmitirSensor(${numero},${tren});document.getElementById('surco-modal-detalle').style.display='none'" style="flex:1;padding:9px;background:${omitido ? '#0d2b1a' : '#2b2200'};border:1px solid ${omitido ? '#1a5c35' : '#5c4a00'};color:${omitido ? '#00e676' : '#ffb300'};border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit"><i class="fas fa-${omitido ? 'check' : 'wrench'}"></i> ${omitido ? 'REACTIVAR' : 'OMITIR SENSOR'}</button></div></div></div>`;
   overlay.style.display = "flex";
 };
 
-// ============================================================
-// OBJETIVO RÁPIDO
-// ============================================================
 window.guardarObjetivoRapido = async function (val) {
-  if (!APP_CONFIG) return;
-  if (!APP_CONFIG.setup) APP_CONFIG.setup = {};
+  if (!APP_CONFIG) return; if (!APP_CONFIG.setup) APP_CONFIG.setup = {};
   APP_CONFIG.setup.densidad_objetivo = parseFloat(val);
-  try {
-    await fetch("/api/config/maquinas/guardar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(APP_CONFIG),
-    });
-    const inp = document.getElementById("input-objetivo");
-    if (inp) {
-      inp.style.backgroundColor = "var(--accent)";
-      inp.style.color = "#000";
-      setTimeout(() => { inp.style.backgroundColor = "#111"; inp.style.color = "var(--accent)"; }, 400);
-    }
-  } catch (e) { console.error("Error guardando objetivo", e); }
+  try { await fetch("/api/config/maquinas/guardar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(APP_CONFIG) }); const inp = document.getElementById("input-objetivo"); if (inp) { inp.style.backgroundColor = "var(--accent)"; inp.style.color = "#000"; setTimeout(() => { inp.style.backgroundColor = "#111"; inp.style.color = "var(--accent)"; }, 400); } } catch (e) { console.error("Error guardando objetivo", e); }
 };
 
-// ============================================================
-// AUTO-REGISTRO NODOS
-// ============================================================
-socket.on("new_node_detected", (nodoData) => {
-  if (typeof window.prepararNuevoNodo === "function") {
-    window.prepararNuevoNodo(nodoData);
-  }
-});
+socket.on("new_node_detected", (nodoData) => { if (typeof window.prepararNuevoNodo === "function") window.prepararNuevoNodo(nodoData); });
