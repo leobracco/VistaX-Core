@@ -5,7 +5,7 @@
     "distancia_entre_surcos": 0.191,
     "factor_k_default": 0.15,
     "p1000": 180,
-    "densidad_objetivo": 14,
+    "densidad_objetivo": 16,
     "objetivos_tren": {},
     "tolerancia_desvio": 20,
     "rpm_min": 2000,

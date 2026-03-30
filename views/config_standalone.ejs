@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VistaX — Configuración</title>
+  <link rel="stylesheet" href="/css/all.min.css"/>
+  <link rel="stylesheet" href="/css/vistax.css"/>
+  <link rel="stylesheet" href="/css/vistax_v2.css"/>
+</head>
+<body style="background:#111; overflow:auto;">
+
+  <script>
+    window.APP_CONFIG = <%- JSON.stringify(config || {}) %>;
+  </script>
+
+  <!-- Incluir el modal de config (mismo partial) pero forzado visible -->
+  <%- include('partials/config_modal') %>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // Socket global para OTA
+    const socket = io();
+    window.socket = socket;
+  </script>
+  <script src="/js/config_modal.js"></script>
+  <script src="/js/ota_functions_v3.js"></script>
+
+  <script>
+    // Abrir el modal automáticamente al cargar
+    document.addEventListener('DOMContentLoaded', () => {
+      const modal = document.getElementById('modal-config');
+      if (modal) {
+        // En standalone: quitar overlay oscuro, hacer fullscreen directo
+        modal.style.display = 'flex';
+        modal.style.background = 'transparent';
+      }
+
+      // Poblar campos
+      const sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+      sv("cfg-nombre", APP_CONFIG.nombre || "Máquina Sin Nombre");
+      sv("cfg-distancia", APP_CONFIG.setup?.distancia_entre_surcos || 0.191);
+      sv("cfg-k", APP_CONFIG.setup?.factor_k_default || 0.15);
+      sv("cfg-p1000", APP_CONFIG.setup?.p1000 || 180);
+      sv("cfg-rpm-min", APP_CONFIG.setup?.rpm_min || 2000);
+      sv("cfg-rpm-max", APP_CONFIG.setup?.rpm_max || 5000);
+      sv("cfg-qty-tolvas", APP_CONFIG.setup?.tolvas || 2);
+      sv("cfg-tolerancia-desvio", APP_CONFIG.setup?.tolerancia_desvio || 20);
+
+      const txtId = document.getElementById("cfg-id-maquina");
+      if (txtId) txtId.innerText = 'ID: ' + (APP_CONFIG.id || "N/A");
+
+      if (typeof workingMapeo !== 'undefined') {
+        workingMapeo = JSON.parse(JSON.stringify(APP_CONFIG.mapeo_sensores || []));
+      }
+      if (typeof _renderizarObjetivosTren === 'function') _renderizarObjetivosTren();
+      if (typeof actualizarSelectNodos === 'function') actualizarSelectNodos();
+      if (typeof switchTab === 'function') switchTab("general");
+    });
+
+    // Override cerrarModal para cerrar la ventana
+    function cerrarModal() {
+      window.close();
+    }
+  </script>
+</body>
+</html>

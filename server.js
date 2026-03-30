@@ -15,12 +15,12 @@ const path = require("path");
 const fs = require("fs");
 require("dotenv").config();
 
-const recorder       = require("./core/logic/map_recorder");
-const seedRecorder   = require("./core/logic/seed_recorder");
-const initMQTT       = require("./core/logic/mqtt_handler");
+const recorder = require("./core/logic/map_recorder");
+const seedRecorder = require("./core/logic/seed_recorder");
+const initMQTT = require("./core/logic/mqtt_handler");
 const profilesManager = require("./core/database/profiles_manager");
-const configRoutes   = require("./routes/config.routes");
-const lotesRoutes    = require("./routes/lotes.routes");
+const configRoutes = require("./routes/config.routes");
+const lotesRoutes = require("./routes/lotes.routes");
 const firmwareRoutes = require("./routes/firmware.routes");
 
 const app = express();
@@ -39,7 +39,10 @@ console.log(`\x1b[33m[VistaX]\x1b[0m Levantando servidor...`);
 // ══════════════════════════════════════════
 const mqttHandler = initMQTT(io, () => {
   const name = profilesManager.getLastProfileName();
-  return profilesManager.getActiveProfile(name) || profilesManager.getActiveProfile("tanzi_default");
+  return (
+    profilesManager.getActiveProfile(name) ||
+    profilesManager.getActiveProfile("tanzi_default")
+  );
 });
 
 app.locals.mqttHandler = mqttHandler;
@@ -52,15 +55,16 @@ seedRecorder.recuperarLoteActivo();
 // ══════════════════════════════════════════
 // RUTAS API
 // ══════════════════════════════════════════
-app.use("/api/config",    configRoutes);
-app.use("/api/lotes",     lotesRoutes);
-app.use("/api/firmware",  firmwareRoutes);
+app.use("/api/config", configRoutes);
+app.use("/api/lotes", lotesRoutes);
+app.use("/api/firmware", firmwareRoutes);
 
 // Mapa: recibe (io, mqttHandler) para cierre centralizado
 let mapaRoutes;
 try {
   const factory = require("./routes/mapa_routes");
-  mapaRoutes = typeof factory === "function" ? factory(io, mqttHandler) : factory;
+  mapaRoutes =
+    typeof factory === "function" ? factory(io, mqttHandler) : factory;
   console.log("[VistaX] ✅ mapa_routes cargado");
 } catch (e) {
   console.error("[VistaX] ❌ mapa_routes:", e.message);
@@ -82,20 +86,38 @@ try {
 // ══════════════════════════════════════════
 app.get("/", (req, res) => {
   const name = profilesManager.getLastProfileName();
-  const config = profilesManager.getActiveProfile(name) ||
-                 profilesManager.getActiveProfile("tanzi_default") || {};
+  const config =
+    profilesManager.getActiveProfile(name) ||
+    profilesManager.getActiveProfile("tanzi_default") ||
+    {};
 
   res.render("index", {
     config,
     loteActivo: recorder.getLoteActivo() || null,
   });
 });
-
+app.get("/detalle-surco", (req, res) => {
+  const name = profilesManager.getLastProfileName();
+  const config = profilesManager.getActiveProfile(name) || {};
+  res.render("detalle_surco", { config });
+});
+app.get("/config", (req, res) => {
+  const name = profilesManager.getLastProfileName();
+  const config = profilesManager.getActiveProfile(name) || {};
+  res.render("config_standalone", { config });
+});
+app.get("/iniciar-lote", (req, res) => {
+  const name = profilesManager.getLastProfileName();
+  const config = profilesManager.getActiveProfile(name) || {};
+  res.render("iniciar_lote_standalone", { config });
+});
 // ══════════════════════════════════════════
 // ARRANCAR
 // ══════════════════════════════════════════
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`\x1b[32m[VistaX]\x1b[0m Monitor → http://localhost:${PORT}`);
-  console.log(`\x1b[36m[VistaX]\x1b[0m API grabado → /api/mapa  (OrbitSyncX ready)`);
+  console.log(
+    `\x1b[36m[VistaX]\x1b[0m API grabado → /api/mapa  (OrbitSyncX ready)`,
+  );
 });

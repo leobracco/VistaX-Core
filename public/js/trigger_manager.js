@@ -22,26 +22,27 @@
 (function () {
   "use strict";
 
-  let _popupVisible    = false;
-  let _pospuesto       = false;
-  let _pospuestoTimer  = null;
-  let _bajasConPulsos  = {};
-  let _triggerTimer    = null;
-  let _loteConfirmado  = false;
+  let _popupVisible = false;
+  let _pospuesto = false;
+  let _pospuestoTimer = null;
+  let _bajasConPulsos = {};
+  let _triggerTimer = null;
+  let _loteConfirmado = false;
 
   function _cfg() {
     const s = window.APP_CONFIG?.setup || {};
     return {
-      minBajadas:       parseInt(s.min_bajadas_trigger)    || 3,
-      segEspera:        parseInt(s.seg_espera_trigger)     || 2,
-      triggerImplemento: s.trigger_implemento !== false,  // default true
+      minBajadas: parseInt(s.min_bajadas_trigger) || 3,
+      segEspera: parseInt(s.seg_espera_trigger) || 2,
+      triggerImplemento: s.trigger_implemento !== false, // default true
     };
   }
 
   function _hayLote() {
     if (_loteConfirmado) return true;
-    if (window.LoteManager?.hayLoteActivo) return window.LoteManager.hayLoteActivo();
-    return !!(window.LOTE_ACTIVO?.activo);
+    if (window.LoteManager?.hayLoteActivo)
+      return window.LoteManager.hayLoteActivo();
+    return !!window.LOTE_ACTIVO?.activo;
   }
 
   // ═══════════════════════════════════════════
@@ -51,21 +52,32 @@
     if (_popupVisible || _pospuesto || _hayLote()) return;
 
     _popupVisible = true;
+    if (window.Shell) {
+      window.open(
+        `/iniciar-lote?origen=${origenMsg}`,
+        "iniciar_lote",
+        "width=450,height=500",
+      );
+      return;
+    }
+
     const overlay = document.getElementById("trigger-overlay");
     if (!overlay) return;
 
     console.log(`[TriggerManager] Popup disparado: ${origenMsg}`);
 
     // Texto del header según origen
-    const header = overlay.querySelector("#trigger-header-txt") ||
-                   overlay.querySelector(".trigger-popup-header span:last-child");
+    const header =
+      overlay.querySelector("#trigger-header-txt") ||
+      overlay.querySelector(".trigger-popup-header span:last-child");
     if (header) {
       const msgs = {
-        bridge:     "BRIDGE DETECTA SIEMBRA \u2014 INICI\u00C1 EL LOTE",
-        semilla:    "SEMILLA DETECTADA \u2014 INICI\u00C1 EL LOTE",
+        bridge: "BRIDGE DETECTA SIEMBRA \u2014 INICI\u00C1 EL LOTE",
+        semilla: "SEMILLA DETECTADA \u2014 INICI\u00C1 EL LOTE",
         implemento: "HERRAMIENTA BAJA \u2014 INICI\u00C1 EL LOTE",
       };
-      header.textContent = msgs[origenMsg] || "SIEMBRA DETECTADA \u2014 INICI\u00C1 EL LOTE";
+      header.textContent =
+        msgs[origenMsg] || "SIEMBRA DETECTADA \u2014 INICI\u00C1 EL LOTE";
     }
 
     overlay.style.display = "flex";
@@ -82,50 +94,79 @@
   }
 
   function _limpiarFormulario() {
-    ["trigger-inp-nombre", "trigger-inp-variedad", "trigger-inp-estab"].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.value = ""; el.style.borderColor = ""; }
-    });
+    ["trigger-inp-nombre", "trigger-inp-variedad", "trigger-inp-estab"].forEach(
+      (id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.value = "";
+          el.style.borderColor = "";
+        }
+      },
+    );
     const sel = document.getElementById("trigger-inp-cultivo");
-    if (sel) { sel.value = ""; sel.style.borderColor = ""; }
+    if (sel) {
+      sel.value = "";
+      sel.style.borderColor = "";
+    }
   }
 
   function _resetTriggers() {
     _bajasConPulsos = {};
-    if (_triggerTimer) { clearTimeout(_triggerTimer); _triggerTimer = null; }
+    if (_triggerTimer) {
+      clearTimeout(_triggerTimer);
+      _triggerTimer = null;
+    }
   }
 
   // ═══════════════════════════════════════════
   // API PÚBLICA
   // ═══════════════════════════════════════════
   window.TriggerManager = {
-
     confirmar: async function () {
-      const nombre   = document.getElementById("trigger-inp-nombre")?.value.trim();
-      const cultivo  = document.getElementById("trigger-inp-cultivo")?.value;
-      const variedad = document.getElementById("trigger-inp-variedad")?.value.trim();
-      const estab    = document.getElementById("trigger-inp-estab")?.value.trim();
-      const ancho    = window.APP_CONFIG?.setup?.distancia_entre_surcos || 0.191;
+      const nombre = document
+        .getElementById("trigger-inp-nombre")
+        ?.value.trim();
+      const cultivo = document.getElementById("trigger-inp-cultivo")?.value;
+      const variedad = document
+        .getElementById("trigger-inp-variedad")
+        ?.value.trim();
+      const estab = document.getElementById("trigger-inp-estab")?.value.trim();
+      const ancho = window.APP_CONFIG?.setup?.distancia_entre_surcos || 0.191;
 
       if (!nombre) {
         const inp = document.getElementById("trigger-inp-nombre");
-        if (inp) { inp.style.borderColor = "var(--danger)"; inp.focus(); }
+        if (inp) {
+          inp.style.borderColor = "var(--danger)";
+          inp.focus();
+        }
         return;
       }
       if (!cultivo) {
         const sel = document.getElementById("trigger-inp-cultivo");
-        if (sel) { sel.style.borderColor = "var(--danger)"; sel.focus(); }
+        if (sel) {
+          sel.style.borderColor = "var(--danger)";
+          sel.focus();
+        }
         return;
       }
 
       const btn = document.querySelector(".tp-btn-primary");
-      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...'; }
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...';
+      }
 
       try {
         const res = await fetch("/api/mapa/iniciar", {
-          method:  "POST",
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ nombre, cultivo, variedad, estab, anchoPasada: ancho }),
+          body: JSON.stringify({
+            nombre,
+            cultivo,
+            variedad,
+            estab,
+            anchoPasada: ancho,
+          }),
         });
 
         if (res.ok) {
@@ -140,12 +181,21 @@
           // Sincronizar LoteManager
           if (window.LoteManager?.setLoteActivo) {
             window.LoteManager.setLoteActivo({
-              activo: true, nombre, cultivo, variedad, estab,
+              activo: true,
+              nombre,
+              cultivo,
+              variedad,
+              estab,
               id: data.lote?.id,
               inicio: data.lote?.inicio || new Date().toISOString(),
             });
           } else {
-            window.LOTE_ACTIVO = { activo: true, nombre, cultivo, id: data.lote?.id };
+            window.LOTE_ACTIVO = {
+              activo: true,
+              nombre,
+              cultivo,
+              id: data.lote?.id,
+            };
           }
 
           console.log(`[TriggerManager] Lote iniciado: "${nombre}"`);
@@ -156,7 +206,10 @@
       } catch (e) {
         alert("Error de conexi\u00F3n con el servidor");
       } finally {
-        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-play"></i> Iniciar Lote'; }
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-play"></i> Iniciar Lote';
+        }
       }
     },
 
@@ -165,18 +218,28 @@
       _pospuesto = true;
       _resetTriggers();
       clearTimeout(_pospuestoTimer);
-      _pospuestoTimer = setTimeout(() => { _pospuesto = false; }, 3 * 60 * 1000);
+      _pospuestoTimer = setTimeout(
+        () => {
+          _pospuesto = false;
+        },
+        3 * 60 * 1000,
+      );
       console.log("[TriggerManager] Pospuesto 3 min");
     },
 
-    hayLoteActivo() { return _hayLote(); },
+    hayLoteActivo() {
+      return _hayLote();
+    },
   };
 
   // ═══════════════════════════════════════════
   // SOCKET — Sincronizar con lote_update
   // ═══════════════════════════════════════════
   function _hookLoteUpdate() {
-    if (!window.socket) { setTimeout(_hookLoteUpdate, 300); return; }
+    if (!window.socket) {
+      setTimeout(_hookLoteUpdate, 300);
+      return;
+    }
 
     window.socket.on("lote_update", (data) => {
       if (data.activo) {
@@ -193,12 +256,17 @@
   // TRIGGER 2 — Señal externa: AOG pintando
   // ═══════════════════════════════════════════
   function _hookBridge() {
-    if (!window.socket) { setTimeout(_hookBridge, 300); return; }
+    if (!window.socket) {
+      setTimeout(_hookBridge, 300);
+      return;
+    }
 
     window.socket.on("field_status", (data) => {
       if (!data?.painting) return;
       if (_hayLote() || _popupVisible || _pospuesto) return;
-      console.log(`[TriggerManager] T2: bridge pintando campo="${data.fieldName}"`);
+      console.log(
+        `[TriggerManager] T2: bridge pintando campo="${data.fieldName}"`,
+      );
       _mostrarPopup("bridge");
     });
 
@@ -217,17 +285,23 @@
   // N bajadas con pulsos > 0 durante X segundos
   // ═══════════════════════════════════════════
   function _hookSemilla() {
-    if (!window.socket) { setTimeout(_hookSemilla, 300); return; }
+    if (!window.socket) {
+      setTimeout(_hookSemilla, 300);
+      return;
+    }
 
     window.socket.on("sensor_update", (data) => {
       if (_hayLote() || _pospuesto) return;
 
       // Solo contar sensores de siembra (no turbina, batería, etc.)
-      const tipoSiembra = data.tipo === "semilla" || data.tipo === "ferti_linea" || data.tipo === "ferti_costado";
+      const tipoSiembra =
+        data.tipo === "semilla" ||
+        data.tipo === "ferti_linea" ||
+        data.tipo === "ferti_costado";
       if (!tipoSiembra) return;
 
       const ahora = Date.now();
-      const cfg   = _cfg();
+      const cfg = _cfg();
 
       if (parseInt(data.nuevas_semillas) > 0) {
         _bajasConPulsos[data.bajada] = ahora;
@@ -252,7 +326,10 @@
           }, cfg.segEspera * 1000);
         }
       } else {
-        if (_triggerTimer) { clearTimeout(_triggerTimer); _triggerTimer = null; }
+        if (_triggerTimer) {
+          clearTimeout(_triggerTimer);
+          _triggerTimer = null;
+        }
       }
     });
 
@@ -271,7 +348,10 @@
   let _implementoAbajo = false;
 
   function _hookImplemento() {
-    if (!window.socket) { setTimeout(_hookImplemento, 300); return; }
+    if (!window.socket) {
+      setTimeout(_hookImplemento, 300);
+      return;
+    }
 
     window.socket.on("sensor_update", (data) => {
       if (!_cfg().triggerImplemento) return;
@@ -295,7 +375,10 @@
       } else if (!abajo) {
         // La herramienta subió → cancelar timer
         _implementoAbajo = false;
-        if (_implementoTimer) { clearTimeout(_implementoTimer); _implementoTimer = null; }
+        if (_implementoTimer) {
+          clearTimeout(_implementoTimer);
+          _implementoTimer = null;
+        }
       }
     });
 
@@ -313,7 +396,9 @@
     _hookSemilla();
     _hookImplemento();
 
-    console.log("[TriggerManager] 4 triggers activos:", _hayLote() ? "lote ya activo" : "esperando evento");
+    console.log(
+      "[TriggerManager] 4 triggers activos:",
+      _hayLote() ? "lote ya activo" : "esperando evento",
+    );
   });
-
 })();

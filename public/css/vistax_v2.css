@@ -287,6 +287,169 @@
   .led-ferti { width: 4px; height: 4px; }
 }
 
+/* ═══════════════════════════════════════════
+   PANTALLA TIPO BARRA (≤250px alto)
+   Ejemplo: 911×182px — pantalla industrial
+   Layout: todo horizontal, sin header/footer vertical
+   ═══════════════════════════════════════════ */
+@media (max-height: 250px) {
+  :root { --tw: 10px; --tw-s: 8px; --tw-m: 6px; }
+
+  /* App: horizontal en vez de vertical */
+  .vistax-app {
+    flex-direction: row !important;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* HEADER → panel izquierdo compacto */
+  .vistax-header {
+    flex-direction: column !important;
+    width: 110px !important;
+    min-width: 110px;
+    height: 100vh !important;
+    padding: 4px 6px !important;
+    border-bottom: none !important;
+    border-right: 1px solid #333;
+    gap: 2px;
+    justify-content: flex-start !important;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .brand { width: 100%; justify-content: center; gap: 4px; }
+  .brand .logo { font-size: 14px !important; }
+  .brand .v-status { display: none; }
+
+  .kpi-container {
+    flex-direction: column !important;
+    gap: 1px !important;
+    width: 100%;
+  }
+  .kpi {
+    border-right: none !important;
+    border-bottom: 1px solid #222;
+    padding: 2px 4px !important;
+    text-align: center;
+  }
+  .kpi:last-child { border-bottom: none; }
+  .kpi small { font-size: 6px !important; margin-bottom: 0; }
+  .kpi div { font-size: 14px !important; }
+  .kpi div small { font-size: 8px !important; }
+  .kpi-input { font-size: 14px !important; width: 45px !important; padding: 1px !important; }
+
+  .status-info { width: 100%; justify-content: center; gap: 4px; }
+  .status-info .btn-tool { width: 24px; height: 24px; font-size: 11px; }
+  .status-dot { width: 7px; height: 7px; }
+
+  /* MONITOR → ocupa todo el espacio central */
+  .monitor-wrapper-v2,
+  .monitor-wrapper {
+    flex: 1 !important;
+    min-width: 0;
+    height: 100vh !important;
+    flex-direction: column !important;
+  }
+
+  .strip-ctrl { display: none !important; }
+
+  #main-monitor {
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow: hidden;
+  }
+
+  .tren-row-wrapper {
+    flex: 1; min-height: 0; overflow: hidden;
+  }
+
+  .tren-title {
+    height: 14px !important;
+    font-size: 6px !important;
+    padding: 0 4px !important;
+  }
+  .tren-obj-badge { display: none; }
+  .tren-switch { width: 22px; height: 11px; }
+  .tren-switch-slider::before { width: 7px; height: 7px; left: 2px; top: 2px; }
+  .tren-switch input:checked + .tren-switch-slider::before { transform: translateX(11px); }
+
+  .tren-row {
+    padding: 2px 4px 2px !important;
+    gap: 2px !important;
+    height: 100%;
+    overflow-x: auto;
+  }
+
+  /* Tubos ultra-compactos */
+  .surco-column {
+    --tw: 10px;
+    min-width: 10px !important; max-width: 10px !important;
+  }
+  .surco-column::before { height: 2px; width: 10px; }
+  .pills-area { width: 8px; border-radius: 0 0 4px 4px; }
+  .surco-id { font-size: 5px; padding: 0; line-height: 1; }
+  .surco-id.par { visibility: hidden; }
+  .surco-val-num { display: none; }
+  .led-ferti { width: 2px; height: 2px; }
+  .led-ferti-costado { top: 6px; }
+
+  /* FOOTER → panel derecho compacto */
+  .vistax-footer {
+    flex-direction: column !important;
+    width: 120px !important;
+    min-width: 120px;
+    height: 100vh !important;
+    padding: 4px 6px !important;
+    border-top: none !important;
+    border-left: 1px solid #333;
+    gap: 4px;
+    justify-content: flex-start !important;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  /* Toggle lote compacto */
+  .btn-toggle-lote {
+    width: 100%; padding: 3px 6px !important;
+    font-size: 8px !important; gap: 3px !important;
+    justify-content: center;
+  }
+  .lote-toggle-timer { font-size: 9px !important; min-width: 36px; }
+
+  .alert-ticker {
+    font-size: 7px !important;
+    letter-spacing: 0;
+    line-height: 1.1;
+    text-align: center;
+    width: 100%;
+    padding: 2px 0;
+  }
+
+  /* Especiales apilados verticalmente */
+  .especiales-container {
+    flex-direction: column !important;
+    width: 100%;
+    gap: 2px !important;
+  }
+  .sensor-especial {
+    min-width: unset !important;
+    width: 100%;
+    padding: 2px 4px !important;
+    gap: 4px !important;
+  }
+  .sensor-especial i { font-size: 10px !important; }
+  .sensor-especial .info span { font-size: 6px !important; }
+  .sensor-especial .info strong { font-size: 11px !important; }
+
+  .actions {
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+    gap: 4px;
+  }
+  .actions .btn-tool { width: 24px; height: 24px; font-size: 11px; }
+}
+
 @media (max-width: 600px) {
   :root { --tw: 15px; }
   .vx-form-grid, .tp-row-2 { grid-template-columns: 1fr; }

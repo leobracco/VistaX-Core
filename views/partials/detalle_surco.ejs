@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>VistaX — Detalle Surco</title>
+  <link rel="stylesheet" href="/css/all.min.css"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#141414; font-family:'Segoe UI',sans-serif; color:#fff; overflow:hidden; }
+    .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:#555; font-size:13px; }
+    .card { background:#141414; min-height:100vh; display:flex; flex-direction:column; }
+    .card-header { background:#1e1e1e; padding:14px 18px; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center; }
+    .card-header .tipo { font-size:10px; color:#555; font-weight:700; text-transform:uppercase; }
+    .card-header .titulo { font-size:18px; font-weight:900; }
+    .card-body { padding:18px; flex:1; }
+    .omitido-badge { background:#2b2200; border:1px solid #5c4a00; border-radius:6px; padding:8px; text-align:center; color:#ffb300; font-weight:700; font-size:11px; margin-bottom:12px; }
+    .spm-block { text-align:center; margin-bottom:12px; }
+    .spm-label { font-size:11px; color:#555; font-weight:700; text-transform:uppercase; margin-bottom:6px; }
+    .spm-value { font-size:48px; font-weight:900; line-height:1; }
+    .spm-unit { font-size:13px; color:#444; }
+    .bar-bg { background:#0a0a0a; border-radius:4px; overflow:hidden; height:6px; margin-bottom:8px; }
+    .bar-fill { height:100%; transition:width .3s; border-radius:4px; }
+    .bar-labels { display:flex; justify-content:space-between; font-size:9px; color:#333; margin-bottom:8px; }
+    .desvio { text-align:center; font-size:11px; margin-bottom:12px; }
+    .ferti-row { display:flex; gap:12px; justify-content:center; margin:10px 0 6px; }
+    .ferti-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .ferti-label { font-size:9px; color:#555; font-weight:700; }
+    .total-box { background:#0a0a0a; border:1px solid #1e1e1e; border-radius:6px; padding:12px; text-align:center; }
+    .total-label { font-size:9px; color:#555; font-weight:700; text-transform:uppercase; margin-bottom:4px; }
+    .total-value { font-size:22px; font-weight:700; color:#ccc; }
+    .btn-omitir { flex:1; padding:9px; border-radius:5px; cursor:pointer; font-size:11px; font-weight:700; font-family:inherit; margin-top:12px; width:100%; }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">Esperando datos del surco...</div>
+  <div class="card" id="card" style="display:none"></div>
+
+  <script>
+    window.APP_CONFIG = <%- JSON.stringify(config || {}) %>;
+
+    // Leer parámetros de la URL: ?bajada=1&tren=1&tipo=semilla
+    const params = new URLSearchParams(window.location.search);
+    const BAJADA = parseInt(params.get('bajada')) || 1;
+    const TREN = parseInt(params.get('tren')) || 1;
+    const TIPO = params.get('tipo') || 'semilla';
+
+    function _objetivoTren(t) {
+      const p = APP_CONFIG?.setup?.objetivos_tren;
+      if (p && p[t] !== undefined) return parseFloat(p[t]);
+      return parseFloat(APP_CONFIG?.setup?.densidad_objetivo) || 16;
+    }
+    function _tolerancia() { return parseFloat(APP_CONFIG?.setup?.tolerancia_desvio) || 20; }
+
+    // Estado
+    let totalSemillas = 0;
+    let spmActual = 0;
+    let fertiLinea = false;
+    let fertiCostado = false;
+    let omitido = false; // lo detecta del sensor_update
+
+    function render() {
+      const objetivo = _objetivoTren(TREN);
+      const pct = objetivo > 0 ? Math.min((spmActual / objetivo) * 100, 200) : 0;
+      const desvio = objetivo > 0 ? Math.abs((spmActual - objetivo) / objetivo * 100).toFixed(0) : 0;
+      const color = spmActual === 0 ? '#ff1744' : pct < 70 ? '#ffb300' : pct > 130 ? '#00e5ff' : '#00e676';
+      const sensorCfg = APP_CONFIG?.mapeo_sensores?.find(s => s.bajada === BAJADA && (s.tren || 1) === TREN);
+
+      document.getElementById('loading').style.display = 'none';
+      const card = document.getElementById('card');
+      card.style.display = 'flex';
+
+      card.innerHTML = `
+        <div class="card-header">
+          <div>
+            <div class="tipo">${sensorCfg?.nombre || TIPO.replace(/_/g,' ')} · Tren ${TREN}</div>
+            <div class="titulo">SURCO ${BAJADA}</div>
+          </div>
+        </div>
+        <div class="card-body">
+          ${omitido ? '<div class="omitido-badge"><i class="fas fa-wrench"></i> SENSOR OMITIDO</div>' : ''}
+          <div class="spm-block">
+            <div class="spm-label">Densidad individual</div>
+            <div class="spm-value" style="color:${color}">${spmActual || '—'}</div>
+            <div class="spm-unit">semillas / metro</div>
+          </div>
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div>
+          <div class="bar-labels"><span>0</span><span>Obj. Tren ${TREN}: ${objetivo}</span><span>${objetivo * 2}</span></div>
+          <div class="desvio" style="color:${parseFloat(desvio) > _tolerancia() ? '#ffb300' : '#444'}">Desvío: ${desvio}%</div>
+          <div class="ferti-row">
+            <div style="display:flex;align-items:center;gap:5px">
+              <span class="ferti-dot" style="background:${fertiLinea ? '#00e676' : '#222'};border:1px solid ${fertiLinea ? '#00e676' : '#333'}"></span>
+              <span class="ferti-label">FERTI L</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <span class="ferti-dot" style="background:${fertiCostado ? '#42a5f5' : '#222'};border:1px solid ${fertiCostado ? '#42a5f5' : '#333'}"></span>
+              <span class="ferti-label">FERTI C</span>
+            </div>
+          </div>
+          <div class="total-box">
+            <div class="total-label">Total acumulado</div>
+            <div class="total-value">${totalSemillas.toLocaleString("es-AR")}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Socket.IO — escuchar updates en vivo
+    const script = document.createElement('script');
+    script.src = '/socket.io/socket.io.js';
+    script.onload = () => {
+      const socket = io();
+      socket.on('sensor_update', (data) => {
+        if (parseInt(data.bajada) !== BAJADA) return;
+        const tren = data.tren || TREN;
+        if (tren !== TREN) return;
+
+        spmActual = parseFloat(data.spm) || 0;
+        totalSemillas += (parseInt(data.nuevas_semillas) || 0);
+
+        if (data.tipo === 'ferti_linea') fertiLinea = parseFloat(data.valor) > 0;
+        if (data.tipo === 'ferti_costado') fertiCostado = parseFloat(data.valor) > 0;
+
+        render();
+      });
+    };
+    document.head.appendChild(script);
+
+    // Render inicial
+    render();
+  </script>
+</body>
+</html>
