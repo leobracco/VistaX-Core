@@ -454,9 +454,9 @@ socket.on("sensor_update", (data) => {
 
   // DEBUG: Log para sensores especiales
   if (TIPOS_ESPECIALES[data.tipo]) {
-    console.log(
-      `🔧 [ESPECIAL] ${data.tipo} bajada:${data.bajada} valor:${data.valor} spm:${data.spm}`,
-    );
+    // console.log(
+    //   `🔧 [ESPECIAL] ${data.tipo} bajada:${data.bajada} valor:${data.valor} spm:${data.spm}`,
+    //);
   }
 
   if (!datosSurcos[key])

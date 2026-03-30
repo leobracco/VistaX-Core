@@ -1,0 +1,199 @@
+/* ============================================================
+   MODO BARRA — VistaXShell 695×150
+   Se activa con max-height: 300px (viewport real ~128px)
+   ============================================================ */
+
+@media (max-height: 300px) {
+
+  /* ── Reset base ── */
+  html {
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+  body {
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #000 !important;
+  }
+
+  /* ── Ocultar header, footer, controles ── */
+  .vistax-header      { display: none !important; }
+  .vistax-footer      { display: none !important; }
+  .strip-ctrl         { display: none !important; }
+
+  /* ── App container: forzar tamaño absoluto ── */
+  .vistax-app {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #000 !important;
+  }
+
+  /* ── Main wrapper: forzar tamaño absoluto ── */
+  main,
+  .monitor-wrapper-v2,
+  main.monitor-wrapper-v2 {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* ── Monitor grid: fila horizontal de tubos ── */
+  .monitor-grid,
+  #main-monitor {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    gap: 1px !important;
+    padding: 2px 4px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    background: #000 !important;
+  }
+
+  /* ── Trenes: eliminar wrappers ── */
+  .tren-row-wrapper {
+    display: contents !important;
+  }
+  .tren-title,
+  .tren-title-actions {
+    display: none !important;
+  }
+  .tren-row {
+    display: contents !important;
+  }
+
+  /* ── Cada tubo ── */
+  .surco-column {
+    min-width: 8px !important;
+    max-width: 14px !important;
+    width: 11px !important;
+    flex: 0 0 11px !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 2px !important;
+    border: 1px solid #2a2a2a !important;
+    background: #0d0d0d !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* ── Número de surco ── */
+  .surco-id {
+    font-size: 6px !important;
+    padding: 1px 0 !important;
+    line-height: 1.2 !important;
+    color: #555 !important;
+    background: #111 !important;
+    border-bottom: 1px solid #1a1a1a !important;
+    text-align: center !important;
+    flex-shrink: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* ── Pills area: todo el resto ── */
+  .pills-area {
+    flex: 1 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* ── Pastilla de estado ── */
+  .pill-status {
+    flex: 1 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* ── Ocultar valores numéricos ── */
+  .surco-val-num {
+    display: none !important;
+  }
+
+  /* ── LEDs ferti ── */
+  .led-ferti {
+    width: 3px !important;
+    height: 3px !important;
+  }
+  .led-ferti-linea {
+    top: 1px !important;
+    left: 1px !important;
+  }
+  .led-ferti-costado {
+    top: 1px !important;
+    right: 1px !important;
+  }
+
+  /* ── Especiales: ocultar ── */
+  .especiales-container { display: none !important; }
+  .sensor-especial      { display: none !important; }
+
+  /* ── Estados visuales ── */
+  .sensor-omitido        { opacity: 0.15 !important; }
+  .surco-column.falla    { border-color: #ff1744 !important; }
+  .surco-column.desvio   { border-color: #ffb300 !important; }
+
+  /* ── Tapado: fondo ligeramente visible para no confundir con vacío ── */
+  .status-tapado {
+    background: #111 !important;
+    border-color: #1a1a1a !important;
+  }
+
+  /* ── Separador entre trenes ── */
+  .tren-row-wrapper + .tren-row-wrapper::before {
+    content: '' !important;
+    display: block !important;
+    width: 3px !important;
+    height: 100% !important;
+    background: #333 !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* ── Scrollbar fino ── */
+  .monitor-grid::-webkit-scrollbar       { height: 2px; }
+  .monitor-grid::-webkit-scrollbar-track  { background: transparent; }
+  .monitor-grid::-webkit-scrollbar-thumb  { background: #222; border-radius: 1px; }
+
+  /* ── Modales: ocultar (se abren en ventana nueva) ── */
+  .modal-overlay    { display: none !important; }
+  .trigger-overlay  { display: none !important; }
+  .vx-modal-overlay { display: none !important; }
+  #modal-ota-overlay { display: none !important; }
+}

@@ -60,8 +60,16 @@
 
     // Override cerrarModal para cerrar la ventana
     function cerrarModal() {
-      window.close();
+      if (window.modalClose) window.modalClose();
+      else window.close();
     }
+
+    // Drag desde el top del modal (tabs-bar o los primeros 40px)
+    document.addEventListener('mousedown', (e) => {
+      if (!window.modalDrag) return;
+      const target = e.target.closest('.modal-tabs, .tabs-bar, .tab-btn');
+      if (target) window.modalDrag();
+    });
   </script>
 </body>
 </html>

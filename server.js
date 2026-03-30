@@ -111,6 +111,11 @@ app.get("/iniciar-lote", (req, res) => {
   const config = profilesManager.getActiveProfile(name) || {};
   res.render("iniciar_lote_standalone", { config });
 });
+app.get("/bar", (req, res) => {
+  const name = profilesManager.getLastProfileName();
+  const config = profilesManager.getActiveProfile(name) || {};
+  res.render("bar", { config });
+});
 // ══════════════════════════════════════════
 // ARRANCAR
 // ══════════════════════════════════════════

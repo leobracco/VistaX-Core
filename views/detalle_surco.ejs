@@ -9,9 +9,11 @@
     body { background:#141414; font-family:'Segoe UI',sans-serif; color:#fff; overflow:hidden; }
     .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:#555; font-size:13px; }
     .card { background:#141414; min-height:100vh; display:flex; flex-direction:column; }
-    .card-header { background:#1e1e1e; padding:14px 18px; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center; }
+    .card-header { background:#1e1e1e; padding:14px 18px; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center; cursor:grab; }
     .card-header .tipo { font-size:10px; color:#555; font-weight:700; text-transform:uppercase; }
     .card-header .titulo { font-size:18px; font-weight:900; }
+    .btn-close { background:transparent; border:none; color:#555; font-size:22px; cursor:pointer; padding:0 4px; line-height:1; }
+    .btn-close:hover { color:#ff1744; }
     .card-body { padding:18px; flex:1; }
     .omitido-badge { background:#2b2200; border:1px solid #5c4a00; border-radius:6px; padding:8px; text-align:center; color:#ffb300; font-weight:700; font-size:11px; margin-bottom:12px; }
     .spm-block { text-align:center; margin-bottom:12px; }
@@ -28,7 +30,6 @@
     .total-box { background:#0a0a0a; border:1px solid #1e1e1e; border-radius:6px; padding:12px; text-align:center; }
     .total-label { font-size:9px; color:#555; font-weight:700; text-transform:uppercase; margin-bottom:4px; }
     .total-value { font-size:22px; font-weight:700; color:#ccc; }
-    .btn-omitir { flex:1; padding:9px; border-radius:5px; cursor:pointer; font-size:11px; font-weight:700; font-family:inherit; margin-top:12px; width:100%; }
   </style>
 </head>
 <body>
@@ -38,7 +39,6 @@
   <script>
     window.APP_CONFIG = <%- JSON.stringify(config || {}) %>;
 
-    // Leer parámetros de la URL: ?bajada=1&tren=1&tipo=semilla
     const params = new URLSearchParams(window.location.search);
     const BAJADA = parseInt(params.get('bajada')) || 1;
     const TREN = parseInt(params.get('tren')) || 1;
@@ -51,12 +51,25 @@
     }
     function _tolerancia() { return parseFloat(APP_CONFIG?.setup?.tolerancia_desvio) || 20; }
 
-    // Estado
     let totalSemillas = 0;
     let spmActual = 0;
     let fertiLinea = false;
     let fertiCostado = false;
-    let omitido = false; // lo detecta del sensor_update
+    let omitido = false;
+
+    function cerrarVentana() {
+      if (window.modalClose) window.modalClose();
+      else window.close();
+    }
+
+    // Drag desde el header
+    document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('mousedown', (e) => {
+        if (e.target.closest('.card-header') && !e.target.closest('.btn-close') && window.modalDrag) {
+          window.modalDrag();
+        }
+      });
+    });
 
     function render() {
       const objetivo = _objetivoTren(TREN);
@@ -75,6 +88,7 @@
             <div class="tipo">${sensorCfg?.nombre || TIPO.replace(/_/g,' ')} · Tren ${TREN}</div>
             <div class="titulo">SURCO ${BAJADA}</div>
           </div>
+          <button class="btn-close" onclick="cerrarVentana()">✕</button>
         </div>
         <div class="card-body">
           ${omitido ? '<div class="omitido-badge"><i class="fas fa-wrench"></i> SENSOR OMITIDO</div>' : ''}
@@ -124,6 +138,9 @@
       });
     };
     document.head.appendChild(script);
+
+    // Escape para cerrar
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarVentana(); });
 
     // Render inicial
     render();

@@ -2,41 +2,54 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>VistaX - Monitor de Siembra</title>
     <link rel="stylesheet" href="/css/all.min.css" />
     <link rel="stylesheet" href="/css/vistax.css" />
     <link rel="stylesheet" href="/css/vistax_v2.css" />
+    <link rel="stylesheet" href="/css/vistax_bar.css" />
   </head>
   <body>
     <div class="vistax-app">
       <%- include('partials/header') %>
 
       <main class="monitor-wrapper-v2">
-        <div class="strip-ctrl" style="cursor:default">
+        <div class="strip-ctrl" style="cursor: default">
           <span class="strip-ctrl-lbl" id="strip-lbl">MONITOR DE SURCOS</span>
           <button class="strip-ctrl-btn" onclick="cambiarModo()">MODO</button>
         </div>
-        <div class="monitor-grid" id="main-monitor" style="flex:1;min-height:0;"></div>
+        <div class="monitor-grid" id="main-monitor"></div>
       </main>
 
       <%- include('partials/footer') %>
     </div>
 
-    <%- include('partials/config_modal') %>
-    <%- include('partials/modal_lote') %>
+    <%- include('partials/config_modal') %> <%- include('partials/modal_lote')
+    %>
 
     <!-- Popup trigger -->
-    <div id="trigger-overlay" class="trigger-overlay" style="display:none">
+    <div id="trigger-overlay" class="trigger-overlay" style="display: none">
       <div class="trigger-popup">
         <div class="trigger-popup-header">
           <span class="trigger-pulse"></span>
-          <span id="trigger-header-txt">SIEMBRA DETECTADA — INICIÁ EL LOTE</span>
+          <span id="trigger-header-txt"
+            >SIEMBRA DETECTADA — INICIÁ EL LOTE</span
+          >
         </div>
         <div class="trigger-popup-body">
           <div class="tp-field">
             <label>Nombre del Lote <span class="req">*</span></label>
-            <input id="trigger-inp-nombre" type="text" placeholder="Ej: La Paloma Norte" autocomplete="off" spellcheck="false" oninput="this.style.borderColor=''"/>
+            <input
+              id="trigger-inp-nombre"
+              type="text"
+              placeholder="Ej: La Paloma Norte"
+              autocomplete="off"
+              spellcheck="false"
+              oninput="this.style.borderColor = ''"
+            />
           </div>
           <div class="tp-field">
             <label>Cultivo <span class="req">*</span></label>
@@ -54,11 +67,21 @@
           <div class="tp-row-2">
             <div class="tp-field">
               <label>Variedad</label>
-              <input id="trigger-inp-variedad" type="text" placeholder="DK7210" autocomplete="off"/>
+              <input
+                id="trigger-inp-variedad"
+                type="text"
+                placeholder="DK7210"
+                autocomplete="off"
+              />
             </div>
             <div class="tp-field">
               <label>Establecimiento</label>
-              <input id="trigger-inp-estab" type="text" placeholder="Los Aromos" autocomplete="off"/>
+              <input
+                id="trigger-inp-estab"
+                type="text"
+                placeholder="Los Aromos"
+                autocomplete="off"
+              />
             </div>
           </div>
         </div>

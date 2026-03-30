@@ -12,7 +12,7 @@
     .header-bar {
       background:rgba(255,23,68,0.08); border:1px solid rgba(255,23,68,0.3);
       border-radius:6px; padding:12px 16px; margin-bottom:20px;
-      display:flex; align-items:center; gap:10px;
+      display:flex; align-items:center; gap:10px; cursor:grab;
     }
     .pulse {
       width:10px; height:10px; border-radius:50%; background:#ff1744;
@@ -97,6 +97,17 @@
   </div>
 
   <script>
+    // Helper para cerrar con bridge
+    function cerrarVentana() {
+      if (window.modalClose) window.modalClose();
+      else window.close();
+    }
+
+    // Drag desde header-bar
+    document.querySelector('.header-bar')?.addEventListener('mousedown', (e) => {
+      if (window.modalDrag) window.modalDrag();
+    });
+
     // Leer origen del trigger desde la URL
     const params = new URLSearchParams(window.location.search);
     const origen = params.get('origen') || 'semilla';
@@ -143,7 +154,7 @@
           btn.innerHTML = '<i class="fas fa-check"></i> Lote Iniciado';
           btn.style.background = 'rgba(0,230,118,0.2)';
           // Cerrar ventana después de 800ms
-          setTimeout(() => window.close(), 800);
+          setTimeout(() => cerrarVentana(), 800);
         } else {
           const err = await res.json().catch(() => ({}));
           alert('Error: ' + (err.error || 'Error desconocido'));
@@ -160,7 +171,7 @@
     function posponer() {
       // No hay forma directa de comunicar al trigger_manager de la ventana padre,
       // pero al cerrar sin iniciar, el trigger se reactivará en 3 min de todas formas
-      window.close();
+      cerrarVentana();
     }
 
     // Enter para confirmar

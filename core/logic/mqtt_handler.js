@@ -28,7 +28,9 @@ function initMQTT(io) {
   function recargarConfig() {
     try {
       const configDir = path.join(__dirname, "../../data/implementos");
-      const archivos = fs.readdirSync(configDir).filter(f => f.endsWith(".json"));
+      const archivos = fs
+        .readdirSync(configDir)
+        .filter((f) => f.endsWith(".json"));
       if (archivos.length > 0) {
         const raw = fs.readFileSync(path.join(configDir, archivos[0]), "utf-8");
         configFresca = JSON.parse(raw);
@@ -87,7 +89,9 @@ function initMQTT(io) {
       seedRecorder = new SeedRecorder(loteActual.id);
       const MapRecorder = require("./map_recorder");
       mapRecorder = new MapRecorder(loteActual.id);
-    } catch (e) { console.log("Recorders no disponibles:", e.message); }
+    } catch (e) {
+      console.log("Recorders no disponibles:", e.message);
+    }
 
     io.emit("lote_update", loteActual);
   }
@@ -99,8 +103,14 @@ function initMQTT(io) {
     loteActual.fin = new Date().toISOString();
     io.emit("lote_update", { activo: false });
 
-    if (seedRecorder) { seedRecorder.close(); seedRecorder = null; }
-    if (mapRecorder) { mapRecorder.close(); mapRecorder = null; }
+    if (seedRecorder) {
+      seedRecorder.close();
+      seedRecorder = null;
+    }
+    if (mapRecorder) {
+      mapRecorder.close();
+      mapRecorder = null;
+    }
     loteActual = null;
   }
 
@@ -117,12 +127,12 @@ function initMQTT(io) {
     if (!configFresca?.mapeo_sensores) return;
 
     const sensoresSemilla = configFresca.mapeo_sensores.filter(
-      s => s.tipo === 'semilla' && s.is_active !== false
+      (s) => s.tipo === "semilla" && s.is_active !== false,
     );
 
     let sumaFlujo = 0;
     let count = 0;
-    sensoresSemilla.forEach(s => {
+    sensoresSemilla.forEach((s) => {
       const key = `${s.uid}-${s.cable || s.pin}`;
       if (statsBuffer[key] !== undefined) {
         sumaFlujo += statsBuffer[key];
@@ -169,7 +179,10 @@ function initMQTT(io) {
       // ═══ AOG FIELD STATUS ═══
       if (topic === "aog/field/status") {
         if (payload.status === "field_open" && !loteActual) {
-          _iniciarLote({ nombre: payload.field_name || "AOG Field", cultivo: "auto" });
+          _iniciarLote({
+            nombre: payload.field_name || "AOG Field",
+            cultivo: "auto",
+          });
         } else if (payload.status === "field_close" && loteActual) {
           _cerrarLote();
         }
@@ -180,7 +193,9 @@ function initMQTT(io) {
       if (topic === "vistax/nodos/registro") {
         let nodoExiste = false;
         if (configFresca?.mapeo_sensores) {
-          nodoExiste = configFresca.mapeo_sensores.some(s => s.uid === payload.uid);
+          nodoExiste = configFresca.mapeo_sensores.some(
+            (s) => s.uid === payload.uid,
+          );
         }
         if (!nodoExiste) {
           console.log(`\x1b[32m[VistaX]\x1b[0m Nuevo nodo: ${payload.uid}`);
@@ -194,12 +209,14 @@ function initMQTT(io) {
         const uidNodo = payload.uid;
 
         if (payload.sensores && configFresca?.mapeo_sensores) {
-          payload.sensores.forEach(sensorRaw => {
+          payload.sensores.forEach((sensorRaw) => {
             const cableFisico = parseInt(sensorRaw.cable);
-            const sensorConfig = configFresca.mapeo_sensores.find(s => {
+            const sensorConfig = configFresca.mapeo_sensores.find((s) => {
               const matchNodo = s.uid === uidNodo;
-              const matchPin = s.pin !== undefined && parseInt(s.pin) === cableFisico - 1;
-              const matchCable = s.cable !== undefined && parseInt(s.cable) === cableFisico;
+              const matchPin =
+                s.pin !== undefined && parseInt(s.pin) === cableFisico - 1;
+              const matchCable =
+                s.cable !== undefined && parseInt(s.cable) === cableFisico;
               return matchNodo && (matchPin || matchCable);
             });
 
@@ -228,11 +245,12 @@ function initMQTT(io) {
 
             // ═══ ALERTAS CON OBJETIVO POR TREN ═══
             if (isSemilla || isFerti) {
-              const seccionesTren = numTren === 1
-                ? telemetriaAOG.seccionesT1
-                : telemetriaAOG.seccionesT2;
-              const maquinaSembrando = seccionesTren.length > 0
-                ? seccionesTren.includes(1) : true;
+              const seccionesTren =
+                numTren === 1
+                  ? telemetriaAOG.seccionesT1
+                  : telemetriaAOG.seccionesT2;
+              const maquinaSembrando =
+                seccionesTren.length > 0 ? seccionesTren.includes(1) : true;
 
               if (telemetriaAOG.velocidad > 1.5 && maquinaSembrando) {
                 if (valorFlujo === 0) {
@@ -244,12 +262,18 @@ function initMQTT(io) {
                   }
                 }
               }
-            } else if (sensorConfig.tipo === "rotacion_eje" || sensorConfig.tipo === "turbina") {
-              if (telemetriaAOG.velocidad > 1.5 && valorFlujo === 0) alertaCritica = true;
+            } else if (
+              sensorConfig.tipo === "rotacion_eje" ||
+              sensorConfig.tipo === "turbina"
+            ) {
+              if (telemetriaAOG.velocidad > 1.5 && valorFlujo === 0)
+                alertaCritica = true;
             }
 
             if (rawPulsos > 0) {
-              console.log(`🎯 [EMIT] Surco: ${sensorConfig.bajada} | Flujo: ${valorFlujo.toFixed(1)} | SPM: ${semillasPorMetro.toFixed(1)}`);
+              console.log(
+                `🎯 [EMIT] Surco: ${sensorConfig.bajada} | Flujo: ${valorFlujo.toFixed(1)} | SPM: ${semillasPorMetro.toFixed(1)}`,
+              );
             }
 
             io.emit("sensor_update", {
