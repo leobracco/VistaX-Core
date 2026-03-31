@@ -93,6 +93,15 @@
 
 .surco-column.sensor-omitido { opacity: 0.2; filter: grayscale(1); }
 .surco-column.sensor-omitido .pills-area { border-style: dashed !important; }
+
+/* Sección cortada por AOG — visual apagado, sin alarma */
+.surco-column.cortado { opacity: 0.15; }
+.surco-column.cortado .pills-area { border-color: #1a1a1a !important; }
+.surco-column.cortado::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 1px; background: #333;
+  pointer-events: none; z-index: 5;
+}
 .surco-column.sensor-omitido::after {
   content: '×'; position: absolute; top: 50%; left: 50%;
   transform: translate(-50%,-50%);

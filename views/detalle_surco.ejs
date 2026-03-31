@@ -15,7 +15,7 @@
     .btn-close { background:transparent; border:none; color:#555; font-size:22px; cursor:pointer; padding:0 4px; line-height:1; }
     .btn-close:hover { color:#ff1744; }
     .card-body { padding:18px; flex:1; }
-    .omitido-badge { background:#2b2200; border:1px solid #5c4a00; border-radius:6px; padding:8px; text-align:center; color:#ffb300; font-weight:700; font-size:11px; margin-bottom:12px; }
+    .omitido-badge { background:rgba(255,179,0,0.06); border:1px solid rgba(255,179,0,0.2); border-radius:8px; padding:8px; text-align:center; color:#ffb300; font-weight:700; font-size:11px; margin-bottom:12px; }
     .spm-block { text-align:center; margin-bottom:12px; }
     .spm-label { font-size:11px; color:#555; font-weight:700; text-transform:uppercase; margin-bottom:6px; }
     .spm-value { font-size:48px; font-weight:900; line-height:1; }
@@ -30,12 +30,30 @@
     .total-box { background:#0a0a0a; border:1px solid #1e1e1e; border-radius:6px; padding:12px; text-align:center; }
     .total-label { font-size:9px; color:#555; font-weight:700; text-transform:uppercase; margin-bottom:4px; }
     .total-value { font-size:22px; font-weight:700; color:#ccc; }
+
+    .btn-omitir {
+      display:flex; align-items:center; justify-content:center; gap:7px;
+      width:100%; margin-top:14px; padding:11px 16px;
+      border-radius:22px; border:none; cursor:pointer;
+      font-size:11px; font-weight:700; font-family:inherit;
+      letter-spacing:0.4px; transition:all .15s;
+    }
+    .btn-omitir:active { transform:scale(0.97); }
+    .btn-omitir.estado-omitir {
+      background:transparent; color:#555; border:1px solid #333;
+    }
+    .btn-omitir.estado-omitir:hover { border-color:#ffb300; color:#ffb300; }
+    .btn-omitir.estado-reactivar {
+      background:rgba(0,230,118,0.08); color:#00e676; border:1px solid rgba(0,230,118,0.25);
+    }
+    .btn-omitir.estado-reactivar:hover { background:rgba(0,230,118,0.15); }
   </style>
 </head>
 <body>
   <div class="loading" id="loading">Esperando datos del surco...</div>
   <div class="card" id="card" style="display:none"></div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     window.APP_CONFIG = <%- JSON.stringify(config || {}) %>;
 
@@ -43,6 +61,13 @@
     const BAJADA = parseInt(params.get('bajada')) || 1;
     const TREN = parseInt(params.get('tren')) || 1;
     const TIPO = params.get('tipo') || 'semilla';
+
+    const socket = io();
+
+    // ═══ Canal de comunicación entre ventanas ═══
+    // BroadcastChannel funciona en WebView2 (mismo origin)
+    let bc = null;
+    try { bc = new BroadcastChannel('vistax_omision'); } catch(e) {}
 
     function _objetivoTren(t) {
       const p = APP_CONFIG?.setup?.objetivos_tren;
@@ -57,26 +82,59 @@
     let fertiCostado = false;
     let omitido = false;
 
+    // Leer estado inicial
+    function _sensorKey(b, t) { return 'T' + (t || 1) + '-' + b; }
+    try {
+      const saved = JSON.parse(localStorage.getItem('vx_sensores_omitidos') || '[]');
+      omitido = saved.includes(_sensorKey(BAJADA, TREN));
+    } catch(e) {}
+
+    function toggleOmitir() {
+      omitido = !omitido;
+      const key = _sensorKey(BAJADA, TREN);
+
+      // 1. Guardar en localStorage
+      try {
+        let saved = JSON.parse(localStorage.getItem('vx_sensores_omitidos') || '[]');
+        if (omitido && !saved.includes(key)) saved.push(key);
+        else if (!omitido) saved = saved.filter(k => k !== key);
+        localStorage.setItem('vx_sensores_omitidos', JSON.stringify(saved));
+      } catch(e) {}
+
+      // 2. Notificar a la ventana principal via BroadcastChannel
+      if (bc) bc.postMessage({ bajada: BAJADA, tren: TREN, omitido: omitido });
+
+      // 3. Fallback: socket
+      socket.emit('toggle_omitir_sensor', { bajada: BAJADA, tren: TREN, omitido: omitido });
+
+      render();
+    }
+
     function cerrarVentana() {
       if (window.modalClose) window.modalClose();
       else window.close();
     }
 
-    // Drag desde el header
-    document.addEventListener('DOMContentLoaded', () => {
-      document.addEventListener('mousedown', (e) => {
-        if (e.target.closest('.card-header') && !e.target.closest('.btn-close') && window.modalDrag) {
-          window.modalDrag();
-        }
-      });
+    // Drag via postMessage
+    document.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.card-header') && !e.target.closest('.btn-close')) {
+        if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage('dragstart');
+      }
+    });
+    document.addEventListener('mouseup', () => {
+      if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage('dragend');
     });
 
     function render() {
       const objetivo = _objetivoTren(TREN);
       const pct = objetivo > 0 ? Math.min((spmActual / objetivo) * 100, 200) : 0;
       const desvio = objetivo > 0 ? Math.abs((spmActual - objetivo) / objetivo * 100).toFixed(0) : 0;
-      const color = spmActual === 0 ? '#ff1744' : pct < 70 ? '#ffb300' : pct > 130 ? '#00e5ff' : '#00e676';
+      const color = omitido ? '#555' : spmActual === 0 ? '#ff1744' : pct < 70 ? '#ffb300' : pct > 130 ? '#00e5ff' : '#00e676';
       const sensorCfg = APP_CONFIG?.mapeo_sensores?.find(s => s.bajada === BAJADA && (s.tren || 1) === TREN);
+
+      const btnClass = omitido ? 'estado-reactivar' : 'estado-omitir';
+      const btnIcon = omitido ? 'check-circle' : 'ban';
+      const btnText = omitido ? 'Reactivar sensor' : 'Omitir sensor';
 
       document.getElementById('loading').style.display = 'none';
       const card = document.getElementById('card');
@@ -91,22 +149,22 @@
           <button class="btn-close" onclick="cerrarVentana()">✕</button>
         </div>
         <div class="card-body">
-          ${omitido ? '<div class="omitido-badge"><i class="fas fa-wrench"></i> SENSOR OMITIDO</div>' : ''}
+          ${omitido ? '<div class="omitido-badge"><i class="fas fa-ban"></i> SENSOR OMITIDO — NO SE MONITOREA</div>' : ''}
           <div class="spm-block">
             <div class="spm-label">Densidad individual</div>
-            <div class="spm-value" style="color:${color}">${spmActual || '—'}</div>
+            <div class="spm-value" style="color:${color}">${omitido ? '—' : (spmActual || '—')}</div>
             <div class="spm-unit">semillas / metro</div>
           </div>
-          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div>
+          <div class="bar-bg"><div class="bar-fill" style="width:${omitido ? 0 : Math.min(pct,100)}%;background:${color}"></div></div>
           <div class="bar-labels"><span>0</span><span>Obj. Tren ${TREN}: ${objetivo}</span><span>${objetivo * 2}</span></div>
-          <div class="desvio" style="color:${parseFloat(desvio) > _tolerancia() ? '#ffb300' : '#444'}">Desvío: ${desvio}%</div>
+          <div class="desvio" style="color:${!omitido && parseFloat(desvio) > _tolerancia() ? '#ffb300' : '#444'}">Desvío: ${omitido ? '—' : desvio}%</div>
           <div class="ferti-row">
             <div style="display:flex;align-items:center;gap:5px">
-              <span class="ferti-dot" style="background:${fertiLinea ? '#00e676' : '#222'};border:1px solid ${fertiLinea ? '#00e676' : '#333'}"></span>
+              <span class="ferti-dot" style="background:${!omitido && fertiLinea ? '#00e676' : '#222'};border:1px solid ${!omitido && fertiLinea ? '#00e676' : '#333'}"></span>
               <span class="ferti-label">FERTI L</span>
             </div>
             <div style="display:flex;align-items:center;gap:5px">
-              <span class="ferti-dot" style="background:${fertiCostado ? '#42a5f5' : '#222'};border:1px solid ${fertiCostado ? '#42a5f5' : '#333'}"></span>
+              <span class="ferti-dot" style="background:${!omitido && fertiCostado ? '#42a5f5' : '#222'};border:1px solid ${!omitido && fertiCostado ? '#42a5f5' : '#333'}"></span>
               <span class="ferti-label">FERTI C</span>
             </div>
           </div>
@@ -114,35 +172,28 @@
             <div class="total-label">Total acumulado</div>
             <div class="total-value">${totalSemillas.toLocaleString("es-AR")}</div>
           </div>
+          <button class="btn-omitir ${btnClass}" onclick="toggleOmitir()">
+            <i class="fas fa-${btnIcon}"></i> ${btnText}
+          </button>
         </div>
       `;
     }
 
-    // Socket.IO — escuchar updates en vivo
-    const script = document.createElement('script');
-    script.src = '/socket.io/socket.io.js';
-    script.onload = () => {
-      const socket = io();
-      socket.on('sensor_update', (data) => {
-        if (parseInt(data.bajada) !== BAJADA) return;
-        const tren = data.tren || TREN;
-        if (tren !== TREN) return;
+    // Socket.IO — datos en vivo
+    socket.on('sensor_update', (data) => {
+      if (parseInt(data.bajada) !== BAJADA) return;
+      const tren = data.tren || TREN;
+      if (tren !== TREN) return;
 
-        spmActual = parseFloat(data.spm) || 0;
-        totalSemillas += (parseInt(data.nuevas_semillas) || 0);
+      spmActual = parseFloat(data.spm) || 0;
+      totalSemillas += (parseInt(data.nuevas_semillas) || 0);
+      if (data.tipo === 'ferti_linea') fertiLinea = parseFloat(data.valor) > 0;
+      if (data.tipo === 'ferti_costado') fertiCostado = parseFloat(data.valor) > 0;
 
-        if (data.tipo === 'ferti_linea') fertiLinea = parseFloat(data.valor) > 0;
-        if (data.tipo === 'ferti_costado') fertiCostado = parseFloat(data.valor) > 0;
+      render();
+    });
 
-        render();
-      });
-    };
-    document.head.appendChild(script);
-
-    // Escape para cerrar
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarVentana(); });
-
-    // Render inicial
     render();
   </script>
 </body>

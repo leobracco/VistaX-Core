@@ -1,0 +1,111 @@
+/* ============================================================
+   VistaX — bar.css
+   Estilos para la vista barra (695×150 — VistaXShell)
+   ============================================================ */
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  height:100%; width:100%; overflow:hidden;
+  background:#000; font-family:'Segoe UI',sans-serif; color:#fff;
+}
+
+.app {
+  display:flex; flex-direction:column;
+  height:100vh; width:100vw; overflow:hidden;
+}
+
+/* ── Barra título mínima ── */
+.titlebar {
+  height:16px; flex-shrink:0; display:flex; align-items:center;
+  background:#050505; border-bottom:1px solid #111;
+  padding:0; overflow:hidden;
+}
+
+.drag {
+  flex:1; display:flex; align-items:center; gap:4px;
+  padding:0 8px; height:100%; cursor:move;
+  -webkit-app-region:drag;
+}
+.drag .brand { font-size:9px; font-weight:900; color:#00e676; }
+.drag .st    { font-size:7px; color:#333; }
+
+.tb-btn {
+  background:transparent; border:none; color:#333; font-size:9px;
+  cursor:pointer; height:100%; padding:0 8px;
+  display:flex; align-items:center;
+  -webkit-app-region:no-drag;
+}
+.tb-btn:hover     { color:#00e676; background:#0a0a0a; }
+.tb-close:hover   { color:#fff; background:#c62828; }
+
+/* ── Cuerpo: KPIs izq + tubos centro + especiales der ── */
+.body {
+  flex:1; display:flex; flex-direction:row;
+  overflow:hidden; min-height:0;
+}
+
+/* Panel izquierdo: KPIs */
+.panel-left {
+  width:58px; flex-shrink:0; display:flex; flex-direction:column;
+  justify-content:center; gap:3px; padding:4px 5px;
+  background:#050505; border-right:1px solid #1a1a1a;
+}
+.kpi       { text-align:center; }
+.kpi .lb   { font-size:6px; color:#555; text-transform:uppercase; display:block; line-height:1; letter-spacing:0.3px; }
+.kpi .vl   { font-size:12px; font-weight:800; line-height:1.3; }
+.kpi .un   { font-size:6px; color:#444; }
+.vl.g      { color:#00e676; }
+.vl.w      { color:#ccc; }
+.vl.r      { color:#ff1744; }
+
+/* Centro: tubos */
+.center {
+  flex:1; display:flex; flex-direction:column;
+  overflow:hidden; min-width:0;
+}
+.row {
+  flex:1; display:flex; flex-direction:row; flex-wrap:nowrap;
+  align-items:stretch; justify-content:center;
+  gap:1px; padding:2px 3px;
+  overflow-x:auto; overflow-y:hidden; min-height:0;
+}
+.row + .row              { border-top:1px solid #111; }
+.row::-webkit-scrollbar  { height:0; }
+
+/* Panel derecho: especiales */
+.panel-right {
+  width:50px; flex-shrink:0; display:flex; flex-direction:column;
+  justify-content:center; gap:3px; padding:4px 4px;
+  background:#050505; border-left:1px solid #1a1a1a;
+}
+.ei        { display:flex; align-items:center; gap:3px; }
+.ei i      { font-size:8px; color:#333; width:12px; text-align:center; }
+.ei .lb    { font-size:5px; color:#444; text-transform:uppercase; }
+.ei .vl    { font-size:9px; font-weight:700; color:#555; }
+.ei .vl.ok   { color:#00e676; }
+.ei .vl.warn { color:#ffb300; }
+
+/* ── Tubos ── */
+.t {
+  display:flex; flex-direction:column; flex:0 0 auto;
+  width:16px; border:1px solid #2a2a2a; border-radius:2px;
+  background:#0d0d0d; overflow:hidden; cursor:pointer;
+  transition:border-color 0.2s;
+}
+.t:hover { border-color:#444; }
+.t.f     { border-color:#ff1744 !important; animation:blink .6s infinite; }
+.t.d     { border-color:#ffb300 !important; }
+
+@keyframes blink { 50% { border-color:#880000; } }
+
+.n {
+  font-size:8px; text-align:center; color:#faf7f7; background:#111;
+  border-bottom:1px solid #1a1a1a; line-height:1.4; flex-shrink:0;
+}
+.b  { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; }
+.fl { width:100%; transition:height .3s, background .3s; border-radius:0 0 1px 1px; }
+.ld { position:absolute; top:2px; left:0; right:0; display:flex; justify-content:space-between; padding:0 2px; }
+.l  { width:4px; height:4px; border-radius:50%; background:#1a1a1a; }
+.lg { background:#00e676; }
+.lb { background:#42a5f5; }
