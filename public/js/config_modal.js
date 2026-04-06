@@ -101,6 +101,7 @@ function _mostrarModal() {
 
   workingMapeo = JSON.parse(JSON.stringify(APP_CONFIG.mapeo_sensores || []));
   _renderizarObjetivosTren();
+  _cargarConfigMonitoreo();
   actualizarSelectNodos();
   switchTab("general");
 }
@@ -426,6 +427,7 @@ async function guardarConfiguracionCompleta() {
       alarma_tiempo_seg: 2,
     },
     mapeo_sensores: workingMapeo,
+    monitoreo: _leerConfigMonitoreo(),
   };
 
   try {
@@ -449,6 +451,59 @@ function cerrarModal() {
   if (modal) modal.style.display = "none";
   if (window.Shell) Shell.barMode();
 }
+
+// ============================================================
+// MONITOREO — Método de inicio configurable
+// ============================================================
+
+window._onMetodoInicioChange = function(val) {
+  const optsDiv = document.getElementById('cfg-monitoreo-sensores-opts');
+  if (optsDiv) optsDiv.style.display = val === 'sensores' ? '' : 'none';
+};
+
+function _cargarConfigMonitoreo() {
+  const metodo = APP_CONFIG?.monitoreo?.metodo_inicio || 'sensores';
+  const umbral = APP_CONFIG?.monitoreo?.umbral_sensores_activos || 3;
+  const tiempo = APP_CONFIG?.monitoreo?.tiempo_confirmacion_ms || 500;
+
+  const selMetodo = document.getElementById('cfg-metodo-inicio');
+  if (selMetodo) selMetodo.value = metodo;
+
+  const slUmbral = document.getElementById('cfg-umbral-sensores');
+  const lblUmbral = document.getElementById('cfg-umbral-val');
+  if (slUmbral) slUmbral.value = umbral;
+  if (lblUmbral) lblUmbral.textContent = umbral;
+
+  const inpTiempo = document.getElementById('cfg-tiempo-confirmacion');
+  if (inpTiempo) inpTiempo.value = tiempo;
+
+  _onMetodoInicioChange(metodo);
+}
+
+function _leerConfigMonitoreo() {
+  return {
+    metodo_inicio: document.getElementById('cfg-metodo-inicio')?.value || 'sensores',
+    umbral_sensores_activos: parseInt(document.getElementById('cfg-umbral-sensores')?.value) || 3,
+    tiempo_confirmacion_ms: parseInt(document.getElementById('cfg-tiempo-confirmacion')?.value) || 500
+  };
+}
+
+// Actualizar indicador de estado desde snapshot de CefSharp
+window._actualizarEstadoMonitoreo = function(monitoreoActivo) {
+  const led = document.getElementById('cfg-monitoreo-estado-led');
+  const txt = document.getElementById('cfg-monitoreo-estado-txt');
+  if (led) led.style.background = monitoreoActivo ? 'var(--accent)' : '#333';
+  if (led) led.style.borderColor = monitoreoActivo ? 'var(--accent)' : '#444';
+  if (txt) txt.textContent = monitoreoActivo ? 'MONITOREANDO' : 'Esperando inicio...';
+  if (txt) txt.style.color = monitoreoActivo ? 'var(--accent)' : '#888';
+
+  // Footer: indicador de estado
+  const footerLed = document.getElementById('monitoreo-estado-footer');
+  if (footerLed) {
+    footerLed.style.background = monitoreoActivo ? 'var(--accent)' : '#333';
+    footerLed.title = monitoreoActivo ? 'Monitoreando' : 'Esperando inicio';
+  }
+};
 
 window.probarSonido = function (rutaSonido) {
   const audioTest = new Audio(rutaSonido);

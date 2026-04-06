@@ -17,6 +17,29 @@ let sensoresOmitidos = new Set();
 let loteTimerInterval = null;
 let loteInicioTs = null;
 
+// ═══ ESTADO LOCAL DE SECCIONES (AOG) ═══
+// Guardamos el último sections_update recibido para poder
+// filtrar sensor_update en el frontend sin esperar al servidor.
+let _seccionesLocalesT1 = [];
+let _seccionesLocalesT2 = [];
+
+/**
+ * Verifica si un surco específico está cortado según el estado
+ * local de secciones. Usa el mismo orden por índice que el servidor.
+ */
+function _surcoEstaCortado(bajada, numTren) {
+  const secciones = numTren === 1 ? _seccionesLocalesT1 : _seccionesLocalesT2;
+  if (!secciones.length) return false;
+
+  const surcosTren = (APP_CONFIG?.mapeo_sensores || [])
+    .filter(s => s.is_active !== false && (s.tren || 1) === numTren && s.tipo === 'semilla')
+    .sort((a, b) => a.bajada - b.bajada);
+
+  const idx = surcosTren.findIndex(s => s.bajada === parseInt(bajada));
+  if (idx < 0 || idx >= secciones.length) return false;
+  return secciones[idx] === 0;
+}
+
 try {
   const saved = localStorage.getItem('vx_sensores_omitidos');
   if (saved) sensoresOmitidos = new Set(JSON.parse(saved));
@@ -111,8 +134,18 @@ window.toggleMute = function () {
 
 function gestionarSonidoAlarma() {
   if (isMuted) return;
-  if (fallasActivas.size > 0) { if (!playingAlarm) { audioAlarma.play().catch(() => {}); playingAlarm = true; } }
-  else { audioAlarma.pause(); audioAlarma.currentTime = 0; playingAlarm = false; }
+  if (fallasActivas.size > 0) {
+    if (!playingAlarm) {
+      console.debug(`[DEBUG Audio] ▶ Alarma INICIADA | fallas activas (${fallasActivas.size}): [${[...fallasActivas].join(', ')}]`);
+      audioAlarma.play().catch(e => console.warn('[DEBUG Audio] play() bloqueado por el navegador:', e));
+      playingAlarm = true;
+    }
+  } else {
+    if (playingAlarm) console.debug('[DEBUG Audio] ■ Alarma DETENIDA | fallasActivas vacío');
+    audioAlarma.pause();
+    audioAlarma.currentTime = 0;
+    playingAlarm = false;
+  }
 }
 
 function _sensorActivo(bajada, tren) {
@@ -394,10 +427,23 @@ function actualizarPastillaEstado(el, data, tren, key) {
   }
 
   // Sección cortada por AOG → no monitorear, visual apagado
-  if (data.seccion_cortada) {
+  // Verificamos TAMBIÉN el estado local de secciones para cubrir el lag
+  // entre cuando el servidor aplica el corte y cuando llega sections_update
+  const cortadoLocalmente = _surcoEstaCortado(bajada, tren);
+  if (data.seccion_cortada || cortadoLocalmente) {
     el.classList.add("status-tapado");
     el.style.height = '3%';
-    fallasActivas.delete(surcoId);
+    // Limpiar TODOS los tipos de sensor de este bajada/tren para que
+    // el sonido se detenga inmediatamente, sin esperar el update de ferti
+    APP_CONFIG.mapeo_sensores?.forEach(s => {
+      if (s.bajada === bajada && (s.tren || 1) === parseInt(tren)) {
+        const sid = `s-${s.tipo}-${s.bajada}`;
+        if (fallasActivas.has(sid)) {
+          console.debug(`[DEBUG Cortado] Limpiando falla ${sid} por sección cortada`);
+          fallasActivas.delete(sid);
+        }
+      }
+    });
     surcosConFalla.delete(key);
     if (surcoCol) { surcoCol.classList.add("cortado"); surcoCol.classList.remove("falla", "desvio"); }
     const valEl = document.getElementById(`val-${key}`);
@@ -489,3 +535,187 @@ socket.on("new_node_detected", (nodoData) => { if (typeof window.prepararNuevoNo
 socket.on("sensor_omision_update", (data) => {
   _aplicarOmision(data.bajada, data.tren, data.omitido);
 });
+// Agregar al final de render_engine.js, junto a los otros socket.on()
+
+socket.on("sections_update", (data) => {
+  const seccionesT1 = data.t1 || [];
+  const seccionesT2 = data.t2 || [];
+
+  // Guardar estado local para que sensor_update pueda filtrar sin esperar al servidor
+  _seccionesLocalesT1 = seccionesT1;
+  _seccionesLocalesT2 = seccionesT2;
+  console.log(`[Secciones] T1:[${seccionesT1.join(',')}] T2:[${seccionesT2.join(',')}]`);
+
+  if (!APP_CONFIG?.mapeo_sensores) return;
+
+  [1, 2].forEach(numTren => {
+    const secciones = numTren === 1 ? seccionesT1 : seccionesT2;
+
+    // Obtener surcos de este tren ordenados por bajada (mismo orden que el servidor)
+    const surcosTren = APP_CONFIG.mapeo_sensores
+      .filter(s => s.is_active !== false && (s.tren || 1) === numTren && s.tipo === "semilla")
+      .sort((a, b) => a.bajada - b.bajada);
+
+    surcosTren.forEach((sensor, idx) => {
+      const cortado = secciones.length > 0 && secciones[idx] === 0;
+      const key     = `T${numTren}-${sensor.bajada}`;
+      const surcoId = `s-semilla-${sensor.bajada}`;
+      const col     = document.getElementById(`surco-col-${key}`);
+      const pill    = document.getElementById(surcoId);
+
+      if (!col) return;
+
+      if (cortado) {
+        // Apagar visualmente el surco
+        col.classList.add("cortado");
+        col.classList.remove("falla", "desvio");
+        if (pill) {
+          pill.classList.remove("status-ok", "status-alerta", "status-desvio");
+          pill.classList.add("status-tapado");
+          pill.style.height = "3%";
+        }
+        // Limpiar del sistema de alarmas
+        fallasActivas.delete(surcoId);
+        surcosConFalla.delete(key);
+      } else {
+        // Reactivar el surco — el siguiente sensor_update lo va a pintar
+        col.classList.remove("cortado");
+      }
+    });
+  });
+
+  // Actualizar ticker y alarma después de procesar todos los surcos
+  _actualizarTicker();
+  gestionarSonidoAlarma();
+});
+
+// ============================================================
+// CENTRADO DE SENSORES POR TREN (layout desde snapshot)
+// Solo re-aplica si los valores cambiaron (evita querySelectorAll en cada frame)
+// ============================================================
+var _lastLayoutHash = '';
+function _aplicarLayoutTrenes(trenes, containerWidthPx) {
+  if (!trenes || !trenes.length) return;
+
+  // Hash rápido para detectar cambios de layout
+  var hash = '';
+  for (var i = 0; i < trenes.length; i++) {
+    hash += trenes[i].tren + ',' + trenes[i].offsetXPx + ',' + trenes[i].spacingPx + ',' + trenes[i].sensorWidthPx + ';';
+  }
+  if (hash === _lastLayoutHash) return;
+  _lastLayoutHash = hash;
+
+  trenes.forEach(function(tl) {
+    var row = document.getElementById('tren-row-' + tl.tren);
+    if (!row) return;
+
+    row.style.justifyContent = 'flex-start';
+    row.style.paddingLeft = tl.offsetXPx + 'px';
+    row.style.paddingRight = tl.offsetXPx + 'px';
+    row.style.maxWidth = (containerWidthPx || 1200) + 'px';
+    row.style.overflow = 'hidden';
+
+    var cols = row.querySelectorAll('.surco-column');
+    var w = tl.sensorWidthPx + 'px';
+    for (var i = 0; i < cols.length; i++) {
+      cols[i].style.width = w;
+      cols[i].style.minWidth = w;
+      cols[i].style.maxWidth = w;
+    }
+    row.style.gap = tl.spacingPx + 'px';
+  });
+}
+
+// ============================================================
+// window.updateData() — API para CefSharp (AgOpenGPS embebido)
+// Recibe un snapshot JSON completo desde C# y actualiza toda la UI
+// Optimizado: reutiliza objeto _surcoData para evitar GC pressure
+// ============================================================
+var _surcoData = { bajada:0, tipo:'', spm:0, valor:0, alerta:false, seccion_cortada:false, nuevas_semillas:0 };
+// Cache de elementos DOM para KPIs (evita getElementById en cada frame)
+var _kpiCache = null;
+function _getKpiCache() {
+  if (!_kpiCache) _kpiCache = {
+    vel: document.getElementById('txt-vel'),
+    dosis: document.getElementById('txt-dosis'),
+    fallas: document.getElementById('kpi-fallas'),
+    online: document.getElementById('kpi-online')
+  };
+  return _kpiCache;
+}
+
+window.updateData = function(jsonStr) {
+  var snap;
+  try {
+    snap = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+  } catch(e) {
+    console.error('[VistaX] updateData parse error:', e);
+    return;
+  }
+
+  // KPIs globales (cached DOM refs)
+  var kpi = _getKpiCache();
+  if (kpi.vel && snap.Velocidad !== undefined) kpi.vel.innerText = parseFloat(snap.Velocidad).toFixed(1);
+  if (kpi.dosis && snap.SpmPromedio !== undefined) kpi.dosis.innerText = parseFloat(snap.SpmPromedio).toFixed(1);
+  if (kpi.fallas && snap.FallasActivas !== undefined) kpi.fallas.innerText = snap.FallasActivas;
+  if (kpi.online && snap.SurcosActivos !== undefined) kpi.online.innerText = snap.SurcosActivos;
+
+  // Centrado de trenes (layout calculado en C#)
+  if (snap.Trenes) {
+    _aplicarLayoutTrenes(snap.Trenes, snap.ContainerWidthPx);
+
+    // Actualizar surcos — reutilizamos _surcoData para reducir allocations
+    for (var ti = 0; ti < snap.Trenes.length; ti++) {
+      var tl = snap.Trenes[ti];
+      if (!tl.Surcos) continue;
+      for (var si = 0; si < tl.Surcos.length; si++) {
+        var surco = tl.Surcos[si];
+        var tren = surco.Tren || tl.tren;
+        var tipo = surco.Tipo || 'semilla';
+        var el = document.getElementById('s-' + tipo + '-' + surco.Bajada);
+        if (el) {
+          _surcoData.bajada = surco.Bajada;
+          _surcoData.tipo = tipo;
+          _surcoData.spm = surco.Spm;
+          _surcoData.valor = surco.Valor;
+          _surcoData.alerta = surco.Alerta;
+          _surcoData.seccion_cortada = surco.SeccionCortada;
+          _surcoData.nuevas_semillas = surco.NuevasSemillas;
+          actualizarPastillaEstado(el, _surcoData, tren, _sensorKey(surco.Bajada, tren));
+        }
+      }
+    }
+  } else if (snap.Surcos) {
+    for (var si2 = 0; si2 < snap.Surcos.length; si2++) {
+      var surco2 = snap.Surcos[si2];
+      var tren2 = surco2.Tren || 1;
+      var tipo2 = surco2.Tipo || 'semilla';
+      var el2 = document.getElementById('s-' + tipo2 + '-' + surco2.Bajada);
+      if (el2) {
+        _surcoData.bajada = surco2.Bajada;
+        _surcoData.tipo = tipo2;
+        _surcoData.spm = surco2.Spm;
+        _surcoData.valor = surco2.Valor;
+        _surcoData.alerta = surco2.Alerta;
+        _surcoData.seccion_cortada = surco2.SeccionCortada;
+        _surcoData.nuevas_semillas = surco2.NuevasSemillas;
+        actualizarPastillaEstado(el2, _surcoData, tren2, _sensorKey(surco2.Bajada, tren2));
+      }
+    }
+  }
+
+  // Estado de monitoreo
+  if (typeof window._actualizarEstadoMonitoreo === 'function') {
+    window._actualizarEstadoMonitoreo(!!snap.MonitoreoActivo);
+  }
+
+  // Botón manual: cambiar label según método y estado
+  if (snap.MetodoInicio === 3 && !snap.MonitoreoActivo) {
+    var lblManual = document.getElementById('lote-toggle-label');
+    if (lblManual && !window.LOTE_ACTIVO?.activo) lblManual.textContent = '▶ INICIAR';
+  }
+
+  // Alarma global
+  if (snap.AlarmMessage) _actualizarTicker();
+  gestionarSonidoAlarma();
+};

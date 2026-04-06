@@ -27,6 +27,9 @@
             <button class="tab-btn" onclick="switchTab('pantalla')">
               <i class="fas fa-desktop"></i> <span>Pantalla y Sonido</span>
             </button>
+            <button class="tab-btn" onclick="switchTab('monitoreo')">
+              <i class="fas fa-play-circle"></i> <span>Monitoreo</span>
+            </button>
           </div>
 
           <div class="sidebar-info">
@@ -164,6 +167,53 @@
                   <option value="flex">Visible</option>
                   <option value="none">Oculto</option>
                 </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ TAB MONITOREO ═══ -->
+          <div id="tab-monitoreo" class="tab-content" style="display:none">
+            <div class="section-header">
+              <h3>Inicio de Monitoreo</h3>
+              <p>Configura cómo y cuándo se activa el monitoreo de siembra.</p>
+            </div>
+            <div class="card-grid">
+              <div class="input-card" style="grid-column: span 2;">
+                <label>Método de Inicio</label>
+                <select id="cfg-metodo-inicio" class="config-select-main" onchange="_onMetodoInicioChange(this.value)">
+                  <option value="sensores">Por Sensores (caída de semilla detectada)</option>
+                  <option value="herramienta">Por Herramienta (señal de bajada)</option>
+                  <option value="pintando">Por Pintando (secciones activas en AOG)</option>
+                  <option value="manual">Manual (botón en pantalla)</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="cfg-monitoreo-sensores-opts" class="card-grid" style="margin-top:12px;">
+              <div class="input-card">
+                <label>Umbral de Sensores Activos</label>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <input type="range" id="cfg-umbral-sensores" min="1" max="20" value="3"
+                    oninput="document.getElementById('cfg-umbral-val').textContent=this.value"
+                    style="flex:1;accent-color:var(--accent);" />
+                  <span id="cfg-umbral-val" style="font-size:18px;font-weight:bold;color:var(--accent);min-width:28px;text-align:center;">3</span>
+                </div>
+                <small style="color:#555;">Cantidad mínima de sensores con flujo para iniciar.</small>
+              </div>
+              <div class="input-card">
+                <label>Tiempo de Confirmación (ms)</label>
+                <input type="number" id="cfg-tiempo-confirmacion" value="500" min="0" max="5000" step="100" />
+                <small style="color:#555;">Espera antes de confirmar el inicio (evita falsos positivos).</small>
+              </div>
+            </div>
+
+            <div style="margin-top:20px;background:#111;border:1px solid #222;border-radius:8px;padding:16px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div id="cfg-monitoreo-estado-led" style="width:14px;height:14px;border-radius:50%;background:#333;border:2px solid #444;"></div>
+                <div>
+                  <div style="font-size:11px;color:#555;font-weight:bold;text-transform:uppercase;">Estado actual</div>
+                  <div id="cfg-monitoreo-estado-txt" style="font-size:14px;color:#888;font-weight:bold;">Esperando inicio...</div>
+                </div>
               </div>
             </div>
           </div>
