@@ -26,6 +26,7 @@ const debugRoutes = require("./routes/debug.routes");
 const nodosRoutes = require("./routes/nodos.routes");
 
 
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);

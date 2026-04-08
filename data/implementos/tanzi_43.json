@@ -5,7 +5,6 @@
     "distancia_entre_surcos": 0.525,
     "densidad_objetivo": 16,
     "objetivos_tren": {
-      "1": 5.2,
       "2": 16
     },
     "tolerancia_desvio": 20,
@@ -17,129 +16,192 @@
   },
   "mapeo_sensores": [
     {
-      "uid": "VX-DE4EB580",
+      "uid": "VX-C8A0F116A398",
       "cable": 1,
       "bajada": 8,
-      "tipo": "semilla",
-      "nombre": "Semilla 3",
-      "tren": 2,
-      "is_active": true
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 2,
-      "bajada": 9,
-      "tipo": "semilla",
-      "nombre": "Semilla 4",
-      "tren": 2,
-      "is_active": true
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 3,
-      "bajada": 10,
-      "tipo": "semilla",
-      "nombre": "Semilla 5",
-      "tren": 2,
-      "is_active": true
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 4,
-      "bajada": 11,
-      "tipo": "semilla",
-      "nombre": "Semilla 6",
-      "tren": 2,
-      "is_active": true
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 5,
-      "bajada": 12,
-      "tipo": "semilla",
-      "nombre": "Semilla 7",
-      "tren": 2,
-      "is_active": true
-    },
-    {
-      "uid": "VX-DE4EB580",
-      "cable": 6,
-      "bajada": 13,
       "tipo": "semilla",
       "nombre": "Semilla 8",
       "tren": 2,
       "is_active": true
     },
     {
-      "uid": "VX-DE4EB580",
-      "cable": 7,
-      "bajada": 14,
+      "uid": "VX-C8A0F116A398",
+      "cable": 2,
+      "bajada": 9,
       "tipo": "semilla",
       "nombre": "Semilla 9",
       "tren": 2,
       "is_active": true
     },
     {
-      "uid": "VX-4DBA2010",
-      "cable": 1,
-      "bajada": 2,
-      "tipo": "semilla",
-      "nombre": "Semilla 1",
-      "tren": 1,
-      "is_active": true
-    },
-    {
-      "uid": "VX-4DBA2010",
-      "cable": 2,
-      "bajada": 1,
-      "tipo": "turbina",
-      "nombre": "RPM 1",
-      "tren": 1,
-      "is_active": true
-    },
-    {
-      "uid": "VX-4DBA2010",
+      "uid": "VX-C8A0F116A398",
       "cable": 3,
-      "bajada": 15,
+      "bajada": 10,
       "tipo": "semilla",
       "nombre": "Semilla 10",
-      "tren": 1,
+      "tren": 2,
       "is_active": true
     },
     {
-      "uid": "VX-4DBA2010",
+      "uid": "VX-C8A0F116A398",
       "cable": 4,
-      "bajada": 1,
-      "tipo": "tolva_vacia",
-      "nombre": "Tolva 1",
-      "tren": 1,
+      "bajada": 11,
+      "tipo": "semilla",
+      "nombre": "Semilla 11",
+      "tren": 2,
       "is_active": true
     },
     {
-      "uid": "VX-4DBA2010",
+      "uid": "VX-C8A0F116A398",
       "cable": 5,
-      "bajada": 2,
-      "tipo": "tolva_vacia",
-      "nombre": "Tolva 2",
-      "tren": 1,
+      "bajada": 12,
+      "tipo": "semilla",
+      "nombre": "Semilla 12",
+      "tren": 2,
       "is_active": true
     },
     {
-      "uid": "VX-4DBA2010",
+      "uid": "VX-C8A0F116A398",
       "cable": 6,
-      "bajada": 1,
-      "tipo": "bajada_herramienta",
-      "nombre": "Trabajo 1",
-      "tren": 1,
+      "bajada": 13,
+      "tipo": "semilla",
+      "nombre": "Semilla 13",
+      "tren": 2,
       "is_active": true
     },
     {
-      "uid": "VX-4DBA2010",
+      "uid": "VX-C8A0F116A398",
       "cable": 7,
-      "bajada": 3,
+      "bajada": 14,
+      "tipo": "semilla",
+      "nombre": "Semilla 14",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-545EDE4EB580",
+      "cable": 1,
+      "bajada": 1,
+      "tipo": "semilla",
+      "nombre": "Semilla 1",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-545EDE4EB580",
+      "cable": 2,
+      "bajada": 2,
       "tipo": "semilla",
       "nombre": "Semilla 2",
-      "tren": 1,
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-545EDE4EB580",
+      "cable": 3,
+      "bajada": 3,
+      "tipo": "semilla",
+      "nombre": "Semilla 3",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-545EDE4EB580",
+      "cable": 4,
+      "bajada": 4,
+      "tipo": "semilla",
+      "nombre": "Semilla 4",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-545EDE4EB580",
+      "cable": 5,
+      "bajada": 5,
+      "tipo": "semilla",
+      "nombre": "Semilla 5",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-545EDE4EB580",
+      "cable": 6,
+      "bajada": 6,
+      "tipo": "semilla",
+      "nombre": "Semilla 6",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-545EDE4EB580",
+      "cable": 7,
+      "bajada": 7,
+      "tipo": "semilla",
+      "nombre": "Semilla 7",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DC9FE616A398",
+      "cable": 1,
+      "bajada": 15,
+      "tipo": "semilla",
+      "nombre": "Semilla 15",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DC9FE616A398",
+      "cable": 2,
+      "bajada": 16,
+      "tipo": "semilla",
+      "nombre": "Semilla 16",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DC9FE616A398",
+      "cable": 3,
+      "bajada": 17,
+      "tipo": "semilla",
+      "nombre": "Semilla 17",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DC9FE616A398",
+      "cable": 4,
+      "bajada": 18,
+      "tipo": "semilla",
+      "nombre": "Semilla 18",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DC9FE616A398",
+      "cable": 5,
+      "bajada": 19,
+      "tipo": "semilla",
+      "nombre": "Semilla 19",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DC9FE616A398",
+      "cable": 6,
+      "bajada": 20,
+      "tipo": "semilla",
+      "nombre": "Semilla 20",
+      "tren": 2,
+      "is_active": true
+    },
+    {
+      "uid": "VX-DC9FE616A398",
+      "cable": 7,
+      "bajada": 21,
+      "tipo": "semilla",
+      "nombre": "Semilla 21",
+      "tren": 2,
       "is_active": true
     }
   ],

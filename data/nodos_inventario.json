@@ -1,14 +1,62 @@
 {
   "nodos": {
-    "VX-BA2010": {
-      "uid": "VX-BA2010",
-      "alias": "1 a 7 Trasero Juri",
+    "VX-545EDE4EB580": {
+      "uid": "VX-545EDE4EB580",
+      "alias": "",
       "ignorado": false,
-      "primer_visto": "2026-04-08T13:17:24.577Z",
-      "ultimo_visto": "2026-04-08T13:17:24.577Z",
+      "primer_visto": "2026-04-08T14:46:24.634Z",
+      "ultimo_visto": "2026-04-08T14:47:15.341Z",
       "ip": "?",
       "rssi": null,
       "firmware": "v2.1.0",
+      "capacidad_cables": 7,
+      "notas": ""
+    },
+    "VX-C8A0F116A398": {
+      "uid": "VX-C8A0F116A398",
+      "alias": "",
+      "ignorado": false,
+      "primer_visto": "2026-04-08T14:50:03.763Z",
+      "ultimo_visto": "2026-04-08T14:51:38.895Z",
+      "ip": "?",
+      "rssi": null,
+      "firmware": "v2.1.0",
+      "capacidad_cables": 7,
+      "notas": ""
+    },
+    "VX-DC9FE616A398": {
+      "uid": "VX-DC9FE616A398",
+      "alias": "",
+      "ignorado": false,
+      "primer_visto": "2026-04-08T14:59:29.622Z",
+      "ultimo_visto": "2026-04-08T15:11:11.162Z",
+      "ip": "?",
+      "rssi": null,
+      "firmware": "v2.1.0",
+      "capacidad_cables": 7,
+      "notas": ""
+    },
+    "VX-E5A1DF7C": {
+      "uid": "VX-E5A1DF7C",
+      "alias": "",
+      "ignorado": false,
+      "primer_visto": "2026-04-08T15:12:50.682Z",
+      "ultimo_visto": "2026-04-08T15:13:02.711Z",
+      "ip": "?",
+      "rssi": null,
+      "firmware": "v1.0.0",
+      "capacidad_cables": 7,
+      "notas": ""
+    },
+    "VX-9C82E5A1DF7C": {
+      "uid": "VX-9C82E5A1DF7C",
+      "alias": "",
+      "ignorado": false,
+      "primer_visto": "2026-04-08T15:13:23.171Z",
+      "ultimo_visto": "2026-04-08T21:14:16.519Z",
+      "ip": "192.168.1.43",
+      "rssi": -32,
+      "firmware": "v2.4.0",
       "capacidad_cables": 7,
       "notas": ""
     }

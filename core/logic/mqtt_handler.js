@@ -13,6 +13,7 @@
 const profilesManager = require("../database/profiles_manager");
 const nodosInventory  = require("../database/nodos_inventory");
 const { publicarConfigCables } = require("./cable_config_publisher");
+
 function initMQTT(io) {
   const mqtt = require("mqtt");
 
@@ -234,6 +235,7 @@ function initMQTT(io) {
       // ═══ REGISTRO NODOS ═══
       if (topic === "vistax/nodos/registro") {
   const uid = payload.uid;
+   nodosInventory.upsertFromHeartbeat(payload);
   if (!uid) return;
 
   // Si está ignorado, no notificar ni configurar
@@ -265,6 +267,9 @@ function initMQTT(io) {
       // ═══ TELEMETRÍA DE SENSORES ═══
       if (topic === "vistax/nodos/telemetria") {
         const uidNodo = payload.uid;
+         if (payload?.uid) {
+    nodosInventory.upsertFromHeartbeat({ uid: payload.uid });
+  }
         if (!payload.sensores || !configFresca?.mapeo_sensores) return;
 
         payload.sensores.forEach(sensorRaw => {

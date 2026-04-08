@@ -134,16 +134,44 @@ function _renderizarObjetivosTren() {
 }
 
 // --- NODOS ---
-function actualizarSelectNodos(nodoForzado = null) {
+let _nodosInventarioCache = [];
+
+async function actualizarSelectNodos(nodoForzado = null) {
   const select = document.getElementById("select-nodo-filter");
   if (!select) return;
-  let nodos = [...new Set(workingMapeo.map((s) => s.uid))];
-  if (nodos.length === 0) nodos.push("VX-A1");
+
+  // 1. UIDs que ya están mapeados en el perfil actual
+  const uidsEnPerfil = [...new Set(workingMapeo.map(s => s.uid))];
+
+  // 2. UIDs del inventario central (nodos vistos por MQTT)
+  try {
+    const res = await fetch("/api/nodos");
+    const data = await res.json();
+    if (data.ok) _nodosInventarioCache = data.nodos || [];
+  } catch (e) {
+    console.warn("[config_modal] No se pudo cargar inventario:", e.message);
+  }
+
+  const uidsInventario = _nodosInventarioCache
+    .filter(n => !n.ignorado)
+    .map(n => n.uid);
+
+  // 3. Unir ambos sets
+  const todos = [...new Set([...uidsEnPerfil, ...uidsInventario])];
+  if (todos.length === 0) todos.push("VX-A1");
+
+  // 4. Pintar el select marcando los que no están en el perfil
   select.innerHTML = "";
-  nodos.sort().forEach((n) => {
-    select.innerHTML += `<option value="${n}">${n}</option>`;
+  todos.sort().forEach(uid => {
+    const enPerfil = uidsEnPerfil.includes(uid);
+    const invNodo = _nodosInventarioCache.find(n => n.uid === uid);
+    const online = invNodo?.online ? "🟢" : invNodo ? "⚪" : "";
+    const marca = enPerfil ? "" : " · SIN MAPEAR";
+    const label = `${online} ${uid}${marca}`.trim();
+    select.innerHTML += `<option value="${uid}">${label}</option>`;
   });
-  nodoActual = nodoForzado || nodos[0];
+
+  nodoActual = nodoForzado || todos[0];
   select.value = nodoActual;
   renderizarTablaNodo(nodoActual);
 }
@@ -198,10 +226,32 @@ function renderizarTablaNodo(uid) {
   const tbody = document.getElementById("lista-sensores-tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
-  const sensoresNodo = workingMapeo.filter((s) => s.uid === uid);
+
+  let sensoresNodo = workingMapeo.filter(s => s.uid === uid);
+
+  // Si el nodo existe en el inventario pero no tiene filas en el perfil,
+  // generar automáticamente los cables según su capacidad (default 7)
+  if (sensoresNodo.length === 0) {
+    const invNodo = _nodosInventarioCache.find(n => n.uid === uid);
+    const capacidad = invNodo?.capacidad_cables || 7;
+    for (let i = 1; i <= capacidad; i++) {
+      const fila = {
+        uid,
+        cable: i,
+        bajada: "",
+        tipo: "semilla",
+        tren: 1,
+        is_active: true,
+      };
+      workingMapeo.push(fila);
+      sensoresNodo.push(fila);
+    }
+    console.log(`[config_modal] Nodo ${uid} pre-cargado con ${capacidad} cables vacíos`);
+  }
+
   sensoresNodo
     .sort((a, b) => a.cable - b.cable)
-    .forEach((sensor) => agregarFilaSensor(sensor));
+    .forEach(sensor => agregarFilaSensor(sensor));
 }
 
 function agregarFilaSensor(datos = null) {

@@ -18,7 +18,7 @@ const path = require("path");
 const profilesManager = require("./profiles_manager");
 
 const INVENTORY_PATH = path.join(__dirname, "../../data/nodos_inventario.json");
-const OFFLINE_TIMEOUT_MS = 60 * 1000;          // 60s sin heartbeat → offline
+const OFFLINE_TIMEOUT_MS = 30 * 1000;          // 60s sin heartbeat → offline
 const ERROR_TIMEOUT_MS   = 60 * 60 * 1000;     // 1h sin heartbeat → error
 
 // Estructura interna en memoria
@@ -56,18 +56,21 @@ function buscarEnPerfiles(uid) {
   const resultado = [];
   try {
     const todosLosPerfiles = profilesManager.listProfiles();
-    for (const id of todosLosPerfiles) {
+    for (const entry of todosLosPerfiles) {
+      // Soporta tanto ["tanzi_43"] como [{id:"tanzi_43", ...}]
+      const id = typeof entry === "string" ? entry : entry?.id;
+      if (!id) continue;
+
       const p = profilesManager.getActiveProfile(id);
       if (p?.mapeo_sensores?.some(s => s.uid === uid)) {
         resultado.push(id);
       }
     }
   } catch (e) {
-    console.error("[NodosInv] Error buscando en perfiles:", e.message);
+    console.error("[NodosInv v2.2] Error buscando en perfiles:", e.message);
   }
   return resultado;
 }
-
 /**
  * Calcula el estado actual de un nodo en base a:
  * - su flag "ignorado" persistido
@@ -81,18 +84,21 @@ function _calcularEstado(nodo) {
   const ultimo = nodo.ultimo_visto ? new Date(nodo.ultimo_visto).getTime() : 0;
   const sinHeartbeat = ahora - ultimo;
 
-  if (sinHeartbeat > ERROR_TIMEOUT_MS || !nodo.firmware) return "error";
-
+  // 1. Primero resolvemos lo administrativo: ¿está en algún perfil?
   const perfiles = buscarEnPerfiles(nodo.uid);
   const enPerfil = perfiles.length > 0;
 
-  if (sinHeartbeat > OFFLINE_TIMEOUT_MS) {
-    return enPerfil ? "offline" : "sin_registrar";
-  }
+  // 2. Errores duros (sin firmware o hace >1h que no reporta)
+  if (!nodo.firmware || nodo.firmware === "?") return "error";
+  if (sinHeartbeat > ERROR_TIMEOUT_MS) return "error";
 
-  return enPerfil ? "registrado" : "sin_registrar";
+  // 3. Si está en un perfil → registrado (independiente del heartbeat reciente).
+  //    El flag .online del listAll() ya te dice si está online o no.
+  if (enPerfil) return "registrado";
+
+  // 4. No está en perfiles → sin_registrar
+  return "sin_registrar";
 }
-
 // ── API pública ─────────────────────────────────────────────
 
 /**
