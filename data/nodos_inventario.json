@@ -1,0 +1,16 @@
+{
+  "nodos": {
+    "VX-BA2010": {
+      "uid": "VX-BA2010",
+      "alias": "1 a 7 Trasero Juri",
+      "ignorado": false,
+      "primer_visto": "2026-04-08T13:17:24.577Z",
+      "ultimo_visto": "2026-04-08T13:17:24.577Z",
+      "ip": "?",
+      "rssi": null,
+      "firmware": "v2.1.0",
+      "capacidad_cables": 7,
+      "notas": ""
+    }
+  }
+}

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>VistaX — Serial Remoto</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0a0a; font-family:'Consolas','Courier New',monospace; color:#ccc; height:100vh; display:flex; flex-direction:column; }
+    .toolbar {
+      background:#141414; border-bottom:1px solid #222; padding:8px 12px;
+      display:flex; align-items:center; gap:10px; flex-shrink:0;
+    }
+    .toolbar span { color:#00e676; font-weight:700; font-size:13px; }
+    .toolbar .dot { width:8px; height:8px; border-radius:50%; background:#333; }
+    .toolbar .dot.on { background:#00e676; box-shadow:0 0 6px #00e676; }
+    .toolbar button {
+      padding:4px 10px; background:#1a1a1a; border:1px solid #333;
+      color:#888; border-radius:3px; cursor:pointer; font-size:11px; font-family:inherit;
+    }
+    .toolbar button:hover { color:#fff; border-color:#555; }
+    .toolbar .info { margin-left:auto; font-size:10px; color:#444; }
+    #log {
+      flex:1; padding:8px 12px; overflow-y:auto; font-size:12px;
+      line-height:1.6; white-space:pre-wrap; word-break:break-all;
+    }
+    .l-info { color:#888; }
+    .l-warn { color:#ffb300; }
+    .l-err { color:#ff1744; }
+    .l-ok { color:#00e676; }
+    .l-mqtt { color:#42a5f5; }
+    .l-sensor { color:#ce93d8; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="dot" id="dot"></div>
+    <span>VistaX Serial Remoto</span>
+    <button onclick="document.getElementById('log').innerHTML=''">Limpiar</button>
+    <button onclick="toggleAutoScroll()">Auto-scroll: <span id="scroll-status">ON</span></button>
+    <button onclick="togglePause()">Pausar: <span id="pause-status">OFF</span></button>
+    <div class="info">
+      Tópico: <code style="color:#42a5f5">vistax/debug/#</code> · 
+      Líneas: <span id="line-count">0</span>
+    </div>
+  </div>
+  <div id="log"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const logEl = document.getElementById("log");
+    const dotEl = document.getElementById("dot");
+    let autoScroll = true;
+    let paused = false;
+    let lineCount = 0;
+    const MAX_LINES = 2000;
+
+    socket.on("connect", () => {
+      dotEl.className = "dot on";
+      addLine("--- Conectado al servidor VistaX ---", "l-ok");
+    });
+    socket.on("disconnect", () => {
+      dotEl.className = "dot";
+      addLine("--- Desconectado ---", "l-err");
+    });
+
+    // Escuchar mensajes de debug del ESP32
+    socket.on("debug_msg", (data) => {
+      if (paused) return;
+      const uid = data.uid || "?";
+      const msg = data.msg || data;
+      let cls = "l-info";
+      if (typeof msg === "string") {
+        if (msg.includes("ERROR") || msg.includes("FATAL")) cls = "l-err";
+        else if (msg.includes("WARN") || msg.includes("⚠")) cls = "l-warn";
+        else if (msg.includes("OK") || msg.includes("✅")) cls = "l-ok";
+        else if (msg.includes("MQTT") || msg.includes("mqtt")) cls = "l-mqtt";
+        else if (msg.includes("Sensor") || msg.includes("pulso") || msg.includes("surco")) cls = "l-sensor";
+      }
+      addLine(`[${uid}] ${msg}`, cls);
+    });
+
+    // También escuchar sensor_update para ver flujo de datos
+    socket.on("sensor_update", (data) => {
+      if (paused) return;
+      if (parseInt(data.nuevas_semillas) > 0) {
+        addLine(`📡 surco:${data.bajada} T${data.tren} | raw:${data.nuevas_semillas} flujo:${data.valor} spm:${data.spm}${data.alerta ? ' ⚠ALERTA' : ''}`, "l-sensor");
+      }
+    });
+
+    socket.on("global_update", (data) => {
+      if (paused) return;
+      if (data.velocidad !== undefined) {
+        addLine(`🚜 vel:${parseFloat(data.velocidad).toFixed(1)} km/h | prom:${data.promedio} s/m`, "l-info");
+      }
+    });
+
+    function addLine(text, cls) {
+      const ts = new Date().toLocaleTimeString("es-AR", { hour12:false, fractionalSecondDigits:3 });
+      const div = document.createElement("div");
+      div.className = cls || "";
+      div.textContent = `${ts}  ${text}`;
+      logEl.appendChild(div);
+      lineCount++;
+
+      // Limitar líneas
+      while (logEl.children.length > MAX_LINES) {
+        logEl.removeChild(logEl.firstChild);
+      }
+
+      document.getElementById("line-count").textContent = lineCount;
+      if (autoScroll) logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function toggleAutoScroll() {
+      autoScroll = !autoScroll;
+      document.getElementById("scroll-status").textContent = autoScroll ? "ON" : "OFF";
+    }
+
+    function togglePause() {
+      paused = !paused;
+      document.getElementById("pause-status").textContent = paused ? "ON" : "OFF";
+    }
+
+    addLine("Esperando mensajes de vistax/debug/# ...", "l-info");
+  </script>
+</body>
+</html>

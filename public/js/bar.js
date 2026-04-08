@@ -1,6 +1,6 @@
 // ============================================================
 // VistaX — bar.js
-// Lógica para la vista barra (695×150 — VistaXShell)
+// Lógica para la vista barra (695×150 — VistaXShell / CefSharp)
 // Depende de: Socket.IO, window.APP_CONFIG
 // ============================================================
 
@@ -24,6 +24,14 @@
   socket.on("disconnect", () => {
     document.getElementById("tb-st").textContent = "· Desconectado";
     document.getElementById("tb-st").style.color = "#ff1744";
+  });
+
+  // ═══════════════════════════════════════════
+  // AUTO-RELOAD al cambiar perfil o guardar config
+  // ═══════════════════════════════════════════
+  socket.on("profile_changed", () => {
+    console.log("[Bar] Perfil cambiado — recargando...");
+    setTimeout(() => location.reload(), 500);
   });
 
   // ═══════════════════════════════════════════
@@ -73,6 +81,12 @@
   const elBot = document.getElementById("tren-bot");
   const map = {};
   const fallas = new Set();
+  const sensoresOmitidos = new Set();
+  function _keyBar(b, tren) { return 'T' + (tren || 1) + '-' + b; }
+  try {
+    const saved = JSON.parse(localStorage.getItem('vx_sensores_omitidos') || '[]');
+    saved.forEach(k => sensoresOmitidos.add(k));
+  } catch(e) {}
 
   lista.forEach(s => {
     const c = s.tren === trenDel ? elTop : elBot;
@@ -107,9 +121,24 @@
   alarma.loop = true;
   let isMuted = false;
   let alarmPlaying = false;
+  let _audioDesbloqueado = false;
+
+  function _desbloquearAudio() {
+    if (_audioDesbloqueado) return;
+    alarma.play().then(() => {
+      alarma.pause();
+      alarma.currentTime = 0;
+      _audioDesbloqueado = true;
+      gestionarAlarma();
+    }).catch(() => {});
+  }
+  document.addEventListener("click",     _desbloquearAudio, { once: false });
+  document.addEventListener("touchstart", _desbloquearAudio, { once: false });
+  document.addEventListener("keydown",   _desbloquearAudio, { once: false });
 
   function gestionarAlarma() {
     if (isMuted) return;
+    if (fallas.size > 0 && !_audioDesbloqueado) return;
     if (fallas.size > 0 && !alarmPlaying) {
       alarma.play().catch(() => {});
       alarmPlaying = true;
@@ -119,6 +148,43 @@
       alarmPlaying = false;
     }
   }
+
+  // ═══════════════════════════════════════════
+  // OMISIÓN DESDE VENTANA DETALLE SURCO
+  // ═══════════════════════════════════════════
+  function _aplicarOmisionBar(bajada, omitidoNuevo) {
+    const b = parseInt(bajada);
+    const t = map[b];
+    if (!t) return;
+    const key = _keyBar(b, t.tren);
+    const f = document.getElementById("f-" + b);
+    if (omitidoNuevo) {
+      sensoresOmitidos.add(key);
+      fallas.delete(b);
+      t.el.className = "t omitido";
+      t.el.style.opacity = "";
+      if (f) { f.style.height = "10%"; f.style.background = "#5c3a00"; }
+    } else {
+      sensoresOmitidos.delete(key);
+      t.el.className = "t";
+      t.el.style.opacity = "";
+      if (f) { f.style.height = "5%"; f.style.background = "#111"; }
+    }
+    const pvFallas = document.getElementById("pv-fallas");
+    if (pvFallas) pvFallas.textContent = fallas.size;
+    gestionarAlarma();
+  }
+
+  socket.on("sensor_omision_update", data => {
+    _aplicarOmisionBar(data.bajada, data.omitido);
+  });
+
+  try {
+    const _bcBar = new BroadcastChannel('vistax_omision');
+    _bcBar.onmessage = (ev) => {
+      _aplicarOmisionBar(ev.data.bajada, ev.data.omitido);
+    };
+  } catch(e) {}
 
   window.toggleMuteBar = function () {
     isMuted = !isMuted;
@@ -140,7 +206,6 @@
     const b = parseInt(data.bajada);
     const ek = data.tipo + "-" + data.bajada;
 
-    // Especiales
     if (espMap[ek]) {
       espMap[ek].textContent = parseFloat(data.valor).toFixed(0);
       espMap[ek].className = "vl" + (parseFloat(data.valor) > 0 ? " ok" : " warn");
@@ -150,7 +215,6 @@
     const t = map[b];
     if (!t) return;
 
-    // Ferti LEDs
     if (data.tipo === "ferti_linea") {
       const e = document.getElementById("ll-" + b);
       if (e) e.className = "l" + (parseFloat(data.valor) > 0 ? " lg" : "");
@@ -162,19 +226,30 @@
       return;
     }
 
-    // Semilla — estado del tubo
     const spm = parseFloat(data.spm) || 0;
     const o = obj(t.tren);
     const f = document.getElementById("f-" + b);
     let c = "#111", p = 5;
 
-    // Sección cortada por AOG → apagar tubo, sin alarma
+    // Sensor omitido
+    if (sensoresOmitidos.has(_keyBar(b, t.tren))) {
+      t.el.className = "t omitido";
+      t.el.style.opacity = "";
+      fallas.delete(b);
+      if (f) { f.style.height = "10%"; f.style.background = "#5c3a00"; }
+      document.getElementById("pv-fallas").textContent = fallas.size;
+      gestionarAlarma();
+      return;
+    }
+
+    // Sección cortada
     if (data.seccion_cortada) {
-      c = "#0a0a0a"; p = 3;
-      t.el.className = "t";
-      t.el.style.opacity = "0.15";
+      c = "#2d2d2d"; p = 8;
+      t.el.className = "t cortado";
+      t.el.style.opacity = "";
       fallas.delete(b);
     } else {
+      t.el.className = "t";
       t.el.style.opacity = "";
       if (data.alerta) {
         c = "#ff1744"; p = 15;
@@ -229,7 +304,6 @@
     }
   });
 
-  // Touch
   dragZone.addEventListener("touchstart", function () {
     if (window.chrome && window.chrome.webview) {
       window.chrome.webview.postMessage("dragstart");

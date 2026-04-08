@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>VistaX — Debug Monitoreo</title>
+  <link rel="stylesheet" href="/css/all.min.css"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0a0a; font-family:'Segoe UI',sans-serif; color:#e0e0e0; padding:16px; overflow-y:auto; }
+
+    h1 { font-size:16px; color:#00e676; margin-bottom:4px; }
+    .sub { font-size:11px; color:#555; margin-bottom:16px; }
+
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+
+    .card {
+      background:#141414; border:1px solid #222; border-radius:8px;
+      padding:14px; display:flex; flex-direction:column; gap:8px;
+    }
+    .card-title {
+      font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.5px; display:flex; align-items:center; gap:8px;
+    }
+    .card-title .dot {
+      width:8px; height:8px; border-radius:50%; flex-shrink:0;
+    }
+    .dot-off { background:#333; }
+    .dot-waiting { background:#ffb300; animation:pulse 1s infinite; }
+    .dot-active { background:#00e676; box-shadow:0 0 6px #00e676; }
+    .dot-fired { background:#ff1744; animation:pulse 0.5s infinite; }
+    @keyframes pulse { 50% { opacity:0.3; } }
+
+    .card-status {
+      font-size:12px; color:#888; min-height:18px;
+    }
+
+    .card-detail {
+      font-size:10px; color:#444; font-family:'Consolas',monospace;
+      background:#0a0a0a; border:1px solid #1a1a1a; border-radius:4px;
+      padding:8px; max-height:80px; overflow-y:auto; white-space:pre-wrap;
+    }
+
+    .btn-sim {
+      padding:8px 14px; border:1px solid #333; background:#1a1a1a;
+      color:#aaa; border-radius:5px; cursor:pointer; font-size:11px;
+      font-weight:700; font-family:inherit; transition:all 0.15s;
+    }
+    .btn-sim:hover { border-color:#00e676; color:#00e676; }
+    .btn-sim.danger:hover { border-color:#ff1744; color:#ff1744; }
+
+    .log-section { margin-top:16px; }
+    .log-title { font-size:11px; color:#555; font-weight:700; text-transform:uppercase; margin-bottom:6px; }
+    #event-log {
+      background:#0a0a0a; border:1px solid #1a1a1a; border-radius:6px;
+      padding:10px; font-family:'Consolas',monospace; font-size:10px;
+      color:#666; height:200px; overflow-y:auto; white-space:pre-wrap;
+    }
+    .log-ok { color:#00e676; }
+    .log-warn { color:#ffb300; }
+    .log-err { color:#ff1744; }
+    .log-info { color:#42a5f5; }
+
+    /* Lote status bar */
+    .lote-bar {
+      background:#141414; border:1px solid #222; border-radius:8px;
+      padding:12px 16px; margin-bottom:16px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .lote-bar .lote-dot {
+      width:10px; height:10px; border-radius:50%; flex-shrink:0;
+    }
+    .lote-bar .lote-info { flex:1; }
+    .lote-bar .lote-name { font-size:13px; font-weight:700; }
+    .lote-bar .lote-meta { font-size:10px; color:#555; }
+  </style>
+</head>
+<body>
+  <h1><i class="fas fa-bug"></i> Debug — Triggers de Monitoreo</h1>
+  <div class="sub">Muestra el estado en vivo de los 4 triggers de inicio. Simular eventos para probar sin hardware.</div>
+
+  <!-- Lote activo -->
+  <div class="lote-bar">
+    <div class="lote-dot" id="lote-dot" style="background:#333"></div>
+    <div class="lote-info">
+      <div class="lote-name" id="lote-name">Sin lote activo</div>
+      <div class="lote-meta" id="lote-meta">—</div>
+    </div>
+    <button class="btn-sim" id="btn-lote-toggle" onclick="toggleLoteManual()">
+      <i class="fas fa-play"></i> Iniciar Lote Test
+    </button>
+  </div>
+
+  <div class="grid">
+    <!-- T1: Manual -->
+    <div class="card" id="card-t1">
+      <div class="card-title">
+        <div class="dot dot-off" id="dot-t1"></div>
+        T1 — Manual (botón UI)
+      </div>
+      <div class="card-status" id="status-t1">Esperando click del operario</div>
+      <div class="card-detail" id="detail-t1">Sin actividad</div>
+      <button class="btn-sim" onclick="simularManual()">
+        <i class="fas fa-hand-pointer"></i> Simular Click Manual
+      </button>
+    </div>
+
+    <!-- T2: AOG Pintando -->
+    <div class="card" id="card-t2">
+      <div class="card-title">
+        <div class="dot dot-off" id="dot-t2"></div>
+        T2 — AOG Pintando (Bridge)
+      </div>
+      <div class="card-status" id="status-t2">Esperando señal del bridge</div>
+      <div class="card-detail" id="detail-t2">Sin actividad</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sim" onclick="simularBridge(true)">
+          <i class="fas fa-paint-roller"></i> Pintar ON
+        </button>
+        <button class="btn-sim danger" onclick="simularBridge(false)">
+          <i class="fas fa-stop"></i> Pintar OFF
+        </button>
+      </div>
+    </div>
+
+    <!-- T3: Caída de semilla -->
+    <div class="card" id="card-t3">
+      <div class="card-title">
+        <div class="dot dot-off" id="dot-t3"></div>
+        T3 — Caída de Semilla (sensores)
+      </div>
+      <div class="card-status" id="status-t3">Esperando pulsos en bajadas</div>
+      <div class="card-detail" id="detail-t3">Bajadas activas: 0 / umbral: 3</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sim" onclick="simularSemilla(5)">
+          <i class="fas fa-seedling"></i> 5 bajadas con pulsos
+        </button>
+        <button class="btn-sim" onclick="simularSemilla(1)">
+          <i class="fas fa-seedling"></i> 1 bajada
+        </button>
+      </div>
+    </div>
+
+    <!-- T4: Herramienta baja -->
+    <div class="card" id="card-t4">
+      <div class="card-title">
+        <div class="dot dot-off" id="dot-t4"></div>
+        T4 — Herramienta Baja (sensor implemento)
+      </div>
+      <div class="card-status" id="status-t4">Esperando señal del cilindro</div>
+      <div class="card-detail" id="detail-t4">Sin actividad</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sim" onclick="simularHerramienta(true)">
+          <i class="fas fa-arrow-down"></i> Herramienta BAJA
+        </button>
+        <button class="btn-sim danger" onclick="simularHerramienta(false)">
+          <i class="fas fa-arrow-up"></i> Herramienta SUBE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event log -->
+  <div class="log-section">
+    <div class="log-title">
+      Event Log (Socket.IO en vivo)
+      <button class="btn-sim" onclick="document.getElementById('event-log').innerHTML=''" style="float:right;padding:3px 8px;font-size:9px">Limpiar</button>
+    </div>
+    <div id="event-log"></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const logEl = document.getElementById("event-log");
+    let loteActivo = null;
+
+    function log(msg, cls) {
+      const ts = new Date().toLocaleTimeString("es-AR", { hour12: false });
+      const line = document.createElement("div");
+      line.className = cls || "";
+      line.textContent = `[${ts}] ${msg}`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setDot(id, cls) {
+      const el = document.getElementById(id);
+      el.className = "dot " + cls;
+    }
+
+    function setText(id, txt) {
+      document.getElementById(id).textContent = txt;
+    }
+
+    // ══════════════════════════════════════════
+    // SOCKET LISTENERS — Eventos reales
+    // ══════════════════════════════════════════
+
+    socket.on("connect", () => log("Socket.IO conectado", "log-ok"));
+    socket.on("disconnect", () => log("Socket.IO desconectado", "log-err"));
+
+    // Lote
+    socket.on("lote_update", (data) => {
+      if (data.activo) {
+        loteActivo = data;
+        document.getElementById("lote-dot").style.background = "#00e676";
+        setText("lote-name", data.nombre || "Lote activo");
+        setText("lote-meta", `ID: ${data.id || "?"} · Cultivo: ${data.cultivo || "?"}`);
+        document.getElementById("btn-lote-toggle").innerHTML = '<i class="fas fa-stop"></i> Cerrar Lote';
+        log(`LOTE INICIADO: "${data.nombre}"`, "log-ok");
+      } else {
+        loteActivo = null;
+        document.getElementById("lote-dot").style.background = "#333";
+        setText("lote-name", "Sin lote activo");
+        setText("lote-meta", "—");
+        document.getElementById("btn-lote-toggle").innerHTML = '<i class="fas fa-play"></i> Iniciar Lote Test';
+        log("LOTE CERRADO", "log-warn");
+      }
+    });
+
+    // Sensor updates — detectar T3 y T4 en vivo
+    let bajasConPulsos = {};
+    socket.on("sensor_update", (data) => {
+      const ahora = Date.now();
+
+      // T3: Contar bajadas con semilla
+      if (data.tipo === "semilla" && parseInt(data.nuevas_semillas) > 0) {
+        bajasConPulsos[data.bajada] = ahora;
+        // Limpiar viejas
+        for (const b in bajasConPulsos) {
+          if (ahora - bajasConPulsos[b] > 5000) delete bajasConPulsos[b];
+        }
+        const activas = Object.keys(bajasConPulsos).length;
+        setText("detail-t3", `Bajadas activas: ${activas} / umbral: 3\nÚltimas: [${Object.keys(bajasConPulsos).join(", ")}]`);
+
+        if (activas >= 3) {
+          setDot("dot-t3", "dot-fired");
+          setText("status-t3", `${activas} bajadas con pulsos — ¡TRIGGER!`);
+        } else {
+          setDot("dot-t3", "dot-waiting");
+          setText("status-t3", `${activas} bajadas con pulsos — esperando umbral`);
+        }
+      }
+
+      // T4: Herramienta
+      if (data.tipo === "bajada_herramienta") {
+        const abajo = parseFloat(data.valor) > 0;
+        setDot("dot-t4", abajo ? "dot-fired" : "dot-off");
+        setText("status-t4", abajo ? "HERRAMIENTA BAJA — trigger activado" : "Herramienta arriba");
+        setText("detail-t4", `valor: ${data.valor} | bajada: ${data.bajada} | ts: ${new Date().toISOString()}`);
+        log(`T4 herramienta: valor=${data.valor} → ${abajo ? "BAJA" : "ARRIBA"}`, abajo ? "log-warn" : "log-info");
+      }
+    });
+
+    // Bridge / AOG field status
+    socket.on("field_status", (data) => {
+      const painting = !!data.painting;
+      setDot("dot-t2", painting ? "dot-fired" : "dot-off");
+      setText("status-t2", painting ? "AOG PINTANDO — trigger activado" : "AOG no pinta");
+      setText("detail-t2", `painting: ${painting} | field: ${data.fieldName || "?"} | ts: ${new Date().toISOString()}`);
+      log(`T2 bridge: painting=${painting} field="${data.fieldName || "?"}"`, painting ? "log-warn" : "log-info");
+    });
+
+    socket.on("aog_field_status", (data) => {
+      const painting = !!data.painting;
+      setDot("dot-t2", painting ? "dot-fired" : "dot-off");
+      setText("status-t2", painting ? "AOG PINTANDO (aog_field_status)" : "AOG no pinta");
+      setText("detail-t2", JSON.stringify(data));
+      log(`T2 aog_field_status: ${JSON.stringify(data)}`, "log-info");
+    });
+
+    // Global update (velocidad)
+    socket.on("global_update", (data) => {
+      if (data.velocidad !== undefined) {
+        log(`Velocidad: ${parseFloat(data.velocidad).toFixed(1)} km/h`, "");
+      }
+    });
+
+    // Sections
+    socket.on("sections_update", (data) => {
+      log(`Secciones: T1=[${(data.t1||[]).join(",")}] T2=[${(data.t2||[]).join(",")}]`, "log-info");
+    });
+
+    // ══════════════════════════════════════════
+    // SIMULADORES — Publicar via MQTT desde el server
+    // ══════════════════════════════════════════
+
+    async function simularManual() {
+      setDot("dot-t1", "dot-fired");
+      setText("status-t1", "Click manual — iniciando lote...");
+      log("T1 MANUAL: simulando click de inicio", "log-warn");
+
+      if (loteActivo) {
+        setText("detail-t1", "Ya hay un lote activo — no se dispara");
+        log("T1: Lote ya activo, no se inicia otro", "log-info");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/mapa/iniciar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nombre: "Debug Manual " + Date.now(), cultivo: "test" }),
+        });
+        const data = await res.json();
+        setText("detail-t1", JSON.stringify(data, null, 2));
+        log("T1: Lote iniciado OK → " + JSON.stringify(data), "log-ok");
+      } catch (e) {
+        setText("detail-t1", "Error: " + e.message);
+        log("T1 ERROR: " + e.message, "log-err");
+      }
+    }
+
+    async function simularBridge(painting) {
+      setDot("dot-t2", painting ? "dot-fired" : "dot-off");
+      setText("status-t2", painting ? "Simulando AOG pintando..." : "Simulando AOG paró");
+      log(`T2 SIM: painting=${painting}`, "log-warn");
+
+      try {
+        const res = await fetch("/api/debug/simular-bridge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ painting, fieldName: "Debug Field" }),
+        });
+        const data = await res.json();
+        setText("detail-t2", JSON.stringify(data));
+      } catch (e) {
+        setText("detail-t2", "Error: " + e.message);
+        log("T2 SIM ERROR: " + e.message, "log-err");
+      }
+    }
+
+    async function simularSemilla(cantBajadas) {
+      setDot("dot-t3", "dot-waiting");
+      setText("status-t3", `Simulando ${cantBajadas} bajadas con pulsos...`);
+      log(`T3 SIM: ${cantBajadas} bajadas`, "log-warn");
+
+      try {
+        const res = await fetch("/api/debug/simular-semilla", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cantBajadas }),
+        });
+        const data = await res.json();
+        setText("detail-t3", JSON.stringify(data));
+      } catch (e) {
+        setText("detail-t3", "Error: " + e.message);
+        log("T3 SIM ERROR: " + e.message, "log-err");
+      }
+    }
+
+    async function simularHerramienta(abajo) {
+      setDot("dot-t4", abajo ? "dot-fired" : "dot-off");
+      setText("status-t4", abajo ? "Simulando herramienta BAJA..." : "Simulando herramienta SUBE...");
+      log(`T4 SIM: herramienta ${abajo ? "BAJA" : "SUBE"}`, "log-warn");
+
+      try {
+        const res = await fetch("/api/debug/simular-herramienta", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ abajo }),
+        });
+        const data = await res.json();
+        setText("detail-t4", JSON.stringify(data));
+      } catch (e) {
+        setText("detail-t4", "Error: " + e.message);
+        log("T4 SIM ERROR: " + e.message, "log-err");
+      }
+    }
+
+    async function toggleLoteManual() {
+      if (loteActivo) {
+        try {
+          await fetch("/api/mapa/cerrar", { method: "POST" });
+          log("Lote cerrado manualmente", "log-warn");
+        } catch (e) { log("Error cerrando: " + e.message, "log-err"); }
+      } else {
+        simularManual();
+      }
+    }
+
+    log("Debug panel listo — esperando eventos...", "log-ok");
+  </script>
+</body>
+</html>

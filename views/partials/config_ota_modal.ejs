@@ -1,0 +1,93 @@
+<!-- Modal OTA — partial separado para mantener config_modal.ejs limpio -->
+<div
+  id="modal-ota-overlay"
+  onclick="if(event.target===this)cerrarModalOTA()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(3px);z-index:3000;align-items:center;justify-content:center;"
+>
+  <div style="background:#1a1a1a;border:1px solid #333;border-radius:8px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,0.5);">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #2a2a2a;">
+      <div>
+        <div style="font-size:13px;font-weight:bold;color:#fff;letter-spacing:0.5px;">GESTIÓN DE NODO</div>
+        <div id="ota-uid-display" style="font-family:monospace;font-size:16px;color:var(--accent);margin-top:2px;">—</div>
+      </div>
+      <button onclick="cerrarModalOTA()" style="background:none;border:none;color:#555;font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+
+    <div style="padding:16px 24px;border-bottom:1px solid #2a2a2a;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;">Estado del nodo</span>
+        <button onclick="solicitarEstadoNodo()" style="padding:4px 10px;background:#111;border:1px solid #333;color:#888;border-radius:4px;cursor:pointer;font-size:11px;">↻ Actualizar</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">Estado</div>
+          <div id="ns-online" style="font-size:13px;font-weight:bold;color:#555;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">Firmware</div>
+          <div id="ns-version" style="font-size:13px;font-weight:bold;color:#fff;font-family:monospace;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">IP</div>
+          <div id="ns-ip" style="font-size:13px;font-weight:bold;color:#fff;font-family:monospace;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">WiFi (RSSI)</div>
+          <div id="ns-rssi" style="font-size:13px;font-weight:bold;color:#fff;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">Uptime</div>
+          <div id="ns-uptime" style="font-size:13px;font-weight:bold;color:#fff;">—</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;border-radius:6px;padding:10px 12px;text-align:center;">
+          <div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px;">RAM libre</div>
+          <div id="ns-heap" style="font-size:13px;font-weight:bold;color:#fff;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:16px 24px;border-bottom:1px solid #2a2a2a;">
+      <div style="font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;margin-bottom:10px;">Comandos</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="enviarComando('estado')" style="flex:1;padding:9px;background:#111;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">📊 Estado</button>
+        <button onclick="enviarComando('reiniciar')" style="flex:1;padding:9px;background:#111;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">🔄 Reiniciar</button>
+        <button onclick="confirmarBorrarWifi()" style="flex:1;padding:9px;background:#111;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:12px;">🗑 Borrar WiFi</button>
+      </div>
+      <div id="cmd-status" style="display:none;margin-top:10px;padding:8px 12px;border-radius:4px;font-size:11px;text-align:center;"></div>
+    </div>
+
+    <div style="padding:16px 24px;">
+      <div style="font-size:10px;color:#666;text-transform:uppercase;font-weight:bold;margin-bottom:10px;">⬆ Actualización OTA</div>
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="ota-firmware-select" class="config-select-main" style="flex:1;font-family:monospace;">
+            <option value="">— cargando... —</option>
+          </select>
+          <button onclick="cargarFirmwares()" title="Refrescar" style="padding:8px 10px;background:#111;border:1px solid #333;color:#888;border-radius:4px;cursor:pointer;font-size:14px;">↻</button>
+          <button onclick="eliminarFirmwareSeleccionado()" title="Eliminar" style="padding:8px 10px;background:#111;border:1px solid #333;color:#555;border-radius:4px;cursor:pointer;font-size:14px;">🗑</button>
+        </div>
+        <div id="ota-firmware-info" style="font-size:11px;color:#555;margin-top:5px;min-height:14px;"></div>
+      </div>
+      <div id="ota-dropzone" ondragover="event.preventDefault();this.style.borderColor='#ffea00'" ondragleave="this.style.borderColor='#333'" ondrop="handleFirmwareDrop(event)" onclick="document.getElementById('ota-file-input').click()" style="border:2px dashed #333;border-radius:6px;padding:14px;text-align:center;cursor:pointer;margin-bottom:4px;">
+        <div style="font-size:18px;margin-bottom:4px">📦</div>
+        <div style="font-size:11px;color:#666;">Arrastrá o click para subir <code style="color:#aaa">VX-*.bin</code></div>
+        <div id="ota-upload-status" style="font-size:11px;color:#555;margin-top:3px;"></div>
+      </div>
+      <input id="ota-file-input" type="file" accept=".bin" style="display:none" onchange="subirFirmware(this.files[0])">
+      <div id="ota-progress-bar-wrap" style="display:none;margin:6px 0 10px;">
+        <div style="background:#111;border-radius:4px;height:3px;overflow:hidden;">
+          <div id="ota-progress-bar" style="height:100%;background:#ffea00;width:0%;transition:width 0.2s;"></div>
+        </div>
+      </div>
+      <div style="background:rgba(255,234,0,0.04);border:1px solid rgba(255,234,0,0.12);border-radius:4px;padding:8px 12px;font-size:11px;color:#666;margin:10px 0;line-height:1.5;">
+        ⚠ El nodo descargará el firmware, lo flasheará y se reiniciará (~30 seg).
+      </div>
+      <div id="ota-status" style="display:none;padding:10px 12px;border-radius:4px;font-size:12px;margin-bottom:12px;text-align:center;white-space:pre-line;line-height:1.6;"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="cerrarModalOTA()" style="flex:1;padding:10px;background:#222;border:1px solid #333;color:#aaa;border-radius:4px;cursor:pointer;font-size:13px;">Cerrar</button>
+        <button id="btn-enviar-ota" onclick="enviarComandoOTA()" style="flex:2;padding:10px;background:rgba(255,234,0,0.08);border:1px solid #ffea00;color:#ffea00;border-radius:4px;cursor:pointer;font-size:13px;font-weight:bold;">⬆ Enviar OTA al nodo</button>
+      </div>
+    </div>
+  </div>
+</div>

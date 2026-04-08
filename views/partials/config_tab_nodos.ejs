@@ -1,0 +1,71 @@
+<!-- ═══ TAB NODOS — Inventario central de hardware ═══ -->
+<div id="tab-nodos" class="tab-content" style="display:none">
+  <div class="section-header">
+    <h3>Inventario de Nodos</h3>
+    <p>Todos los ESP32 vistos por el sistema. Gestioná, configurá y monitoreá el hardware desplegado.</p>
+  </div>
+
+  <!-- Filtros -->
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center;">
+    <div class="filtro-pills" style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button class="filtro-pill active" data-filtro="todos">Todos</button>
+      <button class="filtro-pill" data-filtro="registrado">
+        <span class="dot dot-green"></span> Registrados
+      </button>
+      <button class="filtro-pill" data-filtro="sin_registrar">
+        <span class="dot dot-yellow"></span> Sin registrar
+      </button>
+      <button class="filtro-pill" data-filtro="offline">
+        <span class="dot dot-gray"></span> Offline
+      </button>
+      <button class="filtro-pill" data-filtro="ignorado">
+        <span class="dot dot-dark"></span> Ignorados
+      </button>
+      <button class="filtro-pill" data-filtro="error">
+        <span class="dot dot-red"></span> Error
+      </button>
+    </div>
+
+    <div style="flex:1; min-width:180px;">
+      <input type="text" id="nodos-buscar" placeholder="Buscar UID o alias..."
+             style="width:100%; padding:8px; background:#0a0a0a; border:1px solid #2a2a2a; color:#ddd; border-radius:4px;" />
+    </div>
+
+    <button class="btn-cancel" style="padding:8px 14px" onclick="recargarNodosInventario()">
+      <i class="fas fa-sync"></i> Recargar
+    </button>
+  </div>
+
+  <!-- Tabla -->
+  <div class="mapeo-container table-scroll">
+    <table class="config-table">
+      <thead>
+        <tr>
+          <th style="width:40px">⬤</th>
+          <th>UID / Alias</th>
+          <th>Firmware</th>
+          <th>RSSI</th>
+          <th>IP</th>
+          <th>Perfiles</th>
+          <th>Última conexión</th>
+          <th style="text-align:center; width:200px">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="nodos-inventario-tbody">
+        <tr><td colspan="8" style="text-align:center; color:#555; padding:20px">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal de detalle / edición de nodo -->
+<div id="modal-nodo-detalle" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:#0a0a0a; border:1px solid #2a2a2a; border-radius:6px; width:90%; max-width:560px; padding:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="color:#ddd; margin:0;">Detalle del Nodo</h3>
+      <button onclick="cerrarModalNodoDetalle()" style="background:none; border:none; color:#888; font-size:24px; cursor:pointer;">&times;</button>
+    </div>
+
+    <div id="modal-nodo-detalle-body"></div>
+  </div>
+</div>

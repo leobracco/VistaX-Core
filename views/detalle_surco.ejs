@@ -92,6 +92,7 @@
     function toggleOmitir() {
       omitido = !omitido;
       const key = _sensorKey(BAJADA, TREN);
+      console.debug(`[DEBUG Detalle] toggleOmitir → surco ${BAJADA} tren ${TREN} | omitido: ${omitido}`);
 
       // 1. Guardar en localStorage
       try {
@@ -99,13 +100,20 @@
         if (omitido && !saved.includes(key)) saved.push(key);
         else if (!omitido) saved = saved.filter(k => k !== key);
         localStorage.setItem('vx_sensores_omitidos', JSON.stringify(saved));
-      } catch(e) {}
+        console.debug(`[DEBUG Detalle] localStorage actualizado: ${JSON.stringify(saved)}`);
+      } catch(e) { console.error('[DEBUG Detalle] Error guardando en localStorage:', e); }
 
       // 2. Notificar a la ventana principal via BroadcastChannel
-      if (bc) bc.postMessage({ bajada: BAJADA, tren: TREN, omitido: omitido });
+      if (bc) {
+        bc.postMessage({ bajada: BAJADA, tren: TREN, omitido: omitido });
+        console.debug('[DEBUG Detalle] BroadcastChannel enviado');
+      } else {
+        console.warn('[DEBUG Detalle] BroadcastChannel no disponible, usando solo socket');
+      }
 
-      // 3. Fallback: socket
+      // 3. Notificar via socket (propaga a todas las ventanas incluyendo bar)
       socket.emit('toggle_omitir_sensor', { bajada: BAJADA, tren: TREN, omitido: omitido });
+      console.debug('[DEBUG Detalle] socket emit toggle_omitir_sensor enviado');
 
       render();
     }

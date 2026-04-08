@@ -94,8 +94,14 @@ html, body {
   transition:border-color 0.2s;
 }
 .t:hover { border-color:#444; }
-.t.f     { border-color:#ff1744 !important; animation:blink .6s infinite; }
-.t.d     { border-color:#ffb300 !important; }
+.t.f       { border-color:#ff1744 !important; animation:blink .6s infinite; }
+.t.d       { border-color:#ffb300 !important; }
+/* Omitido manualmente por el operador */
+.t.omitido { border-color:#7a3a00 !important; }
+.t.omitido .n { color:#ff8c00 !important; }
+/* Cortado por AOG — visible para identificar qué surco está desactivado */
+.t.cortado { border-color:#333 !important; }
+.t.cortado .n { color:#333 !important; }
 
 @keyframes blink { 50% { border-color:#880000; } }
 

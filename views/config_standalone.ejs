@@ -17,15 +17,15 @@
   <!-- Incluir el modal de config (mismo partial) pero forzado visible -->
   <%- include('partials/config_modal') %>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    // Socket global para OTA
-    const socket = io();
-    window.socket = socket;
-  </script>
-  <script src="/js/config_modal.js"></script>
-  <script src="/js/ota_functions_v3.js"></script>
-
+ <script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  window.socket = socket;
+</script>
+<script src="/js/config_perfiles.js?v=1"></script>   <!-- ANTES de config_modal -->
+<script src="/js/config_modal.js"></script>
+<script src="/js/ota_functions_v3.js"></script>
+<script src="/js/nodos_inventario.js"></script>
   <script>
     // Abrir el modal automáticamente al cargar
     document.addEventListener('DOMContentLoaded', () => {

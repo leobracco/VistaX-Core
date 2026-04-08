@@ -103,7 +103,7 @@ function _mostrarModal() {
   _renderizarObjetivosTren();
   _cargarConfigMonitoreo();
   actualizarSelectNodos();
-  switchTab("general");
+  switchTab("perfiles");
 }
 
 /**
@@ -258,6 +258,7 @@ function agregarFilaSensor(datos = null) {
 
 // --- TABS ---
 window.switchTab = function (tabId) {
+  if (tabId === 'perfiles') cargarPerfiles();
   if (tabId === "mapeo") guardarEstadoTablaActual();
   document
     .querySelectorAll(".tab-content")
@@ -409,9 +410,6 @@ async function guardarConfiguracionCompleta() {
     setup: {
       distancia_entre_surcos:
         parseFloat(document.getElementById("cfg-distancia")?.value) || 0.191,
-      factor_k_default:
-        parseFloat(document.getElementById("cfg-k")?.value) || 0.15,
-      p1000: parseFloat(document.getElementById("cfg-p1000")?.value) || 180,
       densidad_objetivo:
         parseFloat(document.getElementById("input-objetivo")?.value) || 16,
       objetivos_tren: objetivosPorTren,
@@ -532,6 +530,6 @@ window.prepararNuevoNodo = function (nodoData) {
   nodoActual = nodoData.uid;
   if (typeof actualizarSelectNodos === "function")
     actualizarSelectNodos(nodoActual);
-  if (typeof switchTab === "function") switchTab("general");
+  if (typeof switchTab === "function") switchTab("perfiles");
   alert(`🚜 ¡Nodo ${nodoData.uid} detectado!\nAsigná cada cable y guardá.`);
 };
