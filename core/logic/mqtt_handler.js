@@ -1,51 +1,52 @@
 // ============================================================
-// VistaX — mqtt_handler.js  v6
+// VistaX — mqtt_handler.js  v6.1
 //
-// CAMBIOS v6:
-//   1. Lee el perfil ACTIVO (no el primero alfabético) usando profilesManager
-//   2. Exporta publish() y getEstadoNodos() correctamente
-//   3. publish() acepta opciones (retain, qos)
-//   4. Tracking de estado de nodos (heartbeat para panel OTA)
-//   5. Republicación de config de cables a nodos al arrancar y al cambiar perfil
-//   6. Bajada de herramienta con debounce robusto (de v5)
+// FIXES sobre v6:
+//   1. Eliminado `let mapRecorder = null` (shadoweaba el require del top)
+//   2. seedRecorder: singleton, no clase → usar iniciarLote() / cerrarLote()
+//   3. mapRecorder: singleton, no clase → no instanciar, no llamar close()
+//   4. aog/field/status ahora lee `accion` (no `status`)
+//   5. Suscripción a aog/machine/position + lat/lon en telemetriaAOG
+//   6. mapRecorder.onSensorData() llamado después de io.emit("sensor_update")
+//   7. seedRecorder usa registrarVentana() en lugar de append()
+//   8. seedRecorder.registrarPosicionGPS() llamado en cada posición GPS
 // ============================================================
 
 const profilesManager = require("../database/profiles_manager");
 const nodosInventory  = require("../database/nodos_inventory");
+const mapRecorder     = require("./map_recorder");       // singleton — NO instanciar
+const seedRecorder    = require("./seed_recorder");      // singleton — NO instanciar
 const { publicarConfigCables } = require("./cable_config_publisher");
 
 function initMQTT(io) {
   const mqtt = require("mqtt");
 
-  const client = mqtt.connect("mqtt://192.168.1.11");
+  const client = mqtt.connect("mqtt://127.0.0.1");
 
   let configFresca = null;
   let telemetriaAOG = {
-    velocidad: 0,
+    velocidad:   0,
+    lat:         0,     // FIX 5
+    lon:         0,     // FIX 5
     seccionesT1: [],
     seccionesT2: [],
   };
-  let loteActual = null;
-  let seedRecorder = null;
-  let mapRecorder = null;
+  let loteActual     = null;
+  // FIX 1: ELIMINADO → let mapRecorder = null;
+  // FIX 2: ELIMINADO → let seedRecorder = null; (el singleton se importa arriba)
   let _secDebugCount = 0;
 
-  // ── Estado de nodos (para panel OTA / health check) ──
-  const estadoNodos = {};
-
-  // ── Estado de bajada de herramienta (debounce + dedupe) ──
+  const estadoNodos       = {};
   const estadoHerramienta = new Map();
   const DEBOUNCE_HERRAMIENTA_MS = 150;
-  const TOPIC_AOG_CMD = "vistax/corex/aog/cmd";
+  const TOPIC_AOG_CMD           = "vistax/corex/aog/cmd";
 
-  // ── Cargar config del perfil ACTIVO ──
+  // ── Cargar config del perfil ACTIVO ──────────────────────────
   function recargarConfig() {
     try {
       const nombreActivo = profilesManager.getLastProfileName();
-      const perfil = profilesManager.getActiveProfile(nombreActivo);
-      if (perfil) {
-        configFresca = perfil;
-      }
+      const perfil       = profilesManager.getActiveProfile(nombreActivo);
+      if (perfil) configFresca = perfil;
     } catch (e) {
       console.error("Error cargando config:", e);
     }
@@ -54,29 +55,28 @@ function initMQTT(io) {
   recargarConfig();
   setInterval(recargarConfig, 5000);
 
-  /**
-   * Obtiene el objetivo de densidad para un tren específico.
-   */
   function _objetivoTren(numTren) {
     const porTren = configFresca?.setup?.objetivos_tren;
-    if (porTren && porTren[numTren] !== undefined) {
-      return parseFloat(porTren[numTren]);
-    }
+    if (porTren && porTren[numTren] !== undefined) return parseFloat(porTren[numTren]);
     return parseFloat(configFresca?.setup?.densidad_objetivo) || 16;
   }
 
+  // ── CONNECT ──────────────────────────────────────────────────
   client.on("connect", () => {
     console.log("\x1b[32m[VistaX MQTT]\x1b[0m Conectado al broker");
     client.subscribe("vistax/nodos/telemetria");
     client.subscribe("vistax/nodos/registro");
     client.subscribe("vistax/nodos/estado");
+    client.subscribe("vistax/nodos/heartbeat");
     client.subscribe("aog/machine/speed");
+    client.subscribe("aog/machine/position");   // FIX 5
     client.subscribe("aog/field/status");
     client.subscribe("sections/state");
     client.subscribe("vistax/control/lote");
     client.subscribe("vistax/debug/#");
 
-    // ── Republicar config de cables al perfil activo (con delay para que el broker quede listo) ──
+    mapRecorder.iniciar(client, io);            // inicializa el singleton
+
     setTimeout(() => {
       if (configFresca) {
         publicarConfigCables({ publish }, configFresca);
@@ -85,27 +85,29 @@ function initMQTT(io) {
     }, 1500);
   });
 
-  // ═══ Funciones centralizadas de lote ═══
+  // ═══ CICLO DE VIDA DEL LOTE ══════════════════════════════════
+
   function _iniciarLote(data) {
     loteActual = {
-      id: data.id || `lote_${Date.now()}`,
-      nombre: data.nombre || "Sin nombre",
-      cultivo: data.cultivo || "",
-      variedad: data.variedad || "",
+      id:              data.id || `lote_${Date.now()}`,
+      nombre:          data.nombre || "Sin nombre",
+      cultivo:         data.cultivo || "",
+      variedad:        data.variedad || "",
       establecimiento: data.establecimiento || "",
-      inicio: new Date().toISOString(),
-      activo: true,
+      inicio:          new Date().toISOString(),
+      activo:          true,
     };
     console.log(`\x1b[32m[VistaX]\x1b[0m Lote iniciado: ${loteActual.nombre}`);
 
+    // FIX 2: seedRecorder es singleton — usar su API de módulo
     try {
-      const SeedRecorder = require("./seed_recorder");
-      seedRecorder = new SeedRecorder(loteActual.id);
-      const MapRecorder = require("./map_recorder");
-      mapRecorder = new MapRecorder(loteActual.id);
+      seedRecorder.iniciarLote(loteActual.id, loteActual.nombre);
     } catch (e) {
-      console.log("Recorders no disponibles:", e.message);
+      console.warn("[VistaX] seedRecorder.iniciarLote falló:", e.message);
     }
+
+    // FIX 3: mapRecorder maneja su propio ciclo via aog/field/status —
+    //         NO instanciar ni llamar ningún método aquí.
 
     io.emit("lote_update", loteActual);
   }
@@ -114,70 +116,81 @@ function initMQTT(io) {
     if (!loteActual) return;
     console.log(`\x1b[33m[VistaX]\x1b[0m Lote cerrado: ${loteActual.nombre}`);
     loteActual.activo = false;
-    loteActual.fin = new Date().toISOString();
+    loteActual.fin    = new Date().toISOString();
     io.emit("lote_update", { activo: false });
 
-    if (seedRecorder) { seedRecorder.close(); seedRecorder = null; }
-    if (mapRecorder)  { mapRecorder.close();  mapRecorder  = null; }
+    // FIX 2: API correcta del singleton
+    try { seedRecorder.cerrarLote(); } catch (e) { /* sin lote activo en seedRecorder */ }
+    // FIX 3: mapRecorder.close() no existe — el mapa persiste y se cierra vía MQTT
+
     loteActual = null;
   }
 
-  // Exponer para rutas
+  // Exponer para rutas Express
   client.cerrarLoteDesdeRuta  = _cerrarLote;
   client.iniciarLoteDesdeRuta = _iniciarLote;
   client.getLoteActual        = () => loteActual;
 
-  // ═══ Global stats ═══
+  // ═══ GLOBAL STATS ════════════════════════════════════════════
   let statsBuffer = {};
   let statsTimer  = null;
 
   function _emitirGlobalStats() {
     if (!configFresca?.mapeo_sensores) return;
-
     const sensoresSemilla = configFresca.mapeo_sensores.filter(
       s => s.tipo === "semilla" && s.is_active !== false
     );
-
-    let sumaFlujo = 0;
-    let count = 0;
+    let sumaFlujo = 0, count = 0;
     sensoresSemilla.forEach(s => {
       const key = `${s.uid}-${s.cable || s.pin}`;
-      if (statsBuffer[key] !== undefined) {
-        sumaFlujo += statsBuffer[key];
-        count++;
-      }
+      if (statsBuffer[key] !== undefined) { sumaFlujo += statsBuffer[key]; count++; }
     });
-
-    const promedio = count > 0 ? sumaFlujo / count : 0;
     io.emit("global_update", {
       velocidad: telemetriaAOG.velocidad,
-      promedio:  promedio.toFixed(1),
+      promedio:  (count > 0 ? sumaFlujo / count : 0).toFixed(1),
     });
   }
 
-  if (!statsTimer) {
-    statsTimer = setInterval(_emitirGlobalStats, 1000);
-  }
+  if (!statsTimer) statsTimer = setInterval(_emitirGlobalStats, 1000);
 
-  // ═══ HANDLER PRINCIPAL DE MENSAJES ═══
+  // ═══ HANDLER PRINCIPAL DE MENSAJES ═══════════════════════════
   client.on("message", (topic, message) => {
     try {
-      // ── Debug genérico ──
       if (topic.startsWith("vistax/debug/")) {
-        const uid = topic.replace("vistax/debug/", "");
-        io.emit("debug_msg", { uid, msg: message.toString(), ts: Date.now() });
+        io.emit("debug_msg", {
+          uid: topic.replace("vistax/debug/", ""),
+          msg: message.toString(),
+          ts:  Date.now(),
+        });
         return;
       }
 
       const payload = JSON.parse(message.toString());
 
-      // ═══ VELOCIDAD ═══
+      // ── VELOCIDAD ────────────────────────────────────────────
       if (topic === "aog/machine/speed") {
         telemetriaAOG.velocidad = parseFloat(payload) || 0;
         return;
       }
 
-      // ═══ SECCIONES ═══
+      // FIX 5+8: ── POSICIÓN GPS ────────────────────────────────
+      if (topic === "aog/machine/position") {
+        if (payload.lat && payload.lon) {
+          telemetriaAOG.lat = payload.lat;
+          telemetriaAOG.lon = payload.lon;
+          // FIX 8: alimentar al seedRecorder para interpolación temporal
+          seedRecorder.registrarPosicionGPS(
+            payload.lat,
+            payload.lon,
+            payload.heading || 0,
+            Date.now()
+          );
+        }
+        // mapRecorder recibe este mismo topic vía su propio listener
+        return;
+      }
+
+      // ── SECCIONES ────────────────────────────────────────────
       if (topic === "sections/state") {
         telemetriaAOG.seccionesT1 = payload.t1 || [];
         telemetriaAOG.seccionesT2 = payload.t2 || [];
@@ -188,92 +201,81 @@ function initMQTT(io) {
         return;
       }
 
-      // ═══ CONTROL LOTE (desde CoreX) ═══
+      // ── CONTROL LOTE (desde UI o CoreX) ──────────────────────
       if (topic === "vistax/control/lote") {
-        if (payload.accion === "iniciar") _iniciarLote(payload);
+        if (payload.accion === "iniciar")     _iniciarLote(payload);
         else if (payload.accion === "cerrar") _cerrarLote();
         return;
       }
 
-      // ═══ AOG FIELD STATUS ═══
+      // FIX 4: ── AOG FIELD STATUS ──────────────────────────────
+      // aog_log_watcher publica { fieldName, accion, painting, ts }
+      // El campo correcto es `accion`, NO `status`.
       if (topic === "aog/field/status") {
-        if (payload.status === "field_open" && !loteActual) {
-          _iniciarLote({ nombre: payload.field_name || "AOG Field", cultivo: "auto" });
-        } else if (payload.status === "field_close" && loteActual) {
+        const { accion, fieldName } = payload;
+        if (["abierto", "nuevo", "continuar"].includes(accion) && !loteActual) {
+          _iniciarLote({ nombre: fieldName || "AOG Field", cultivo: "auto" });
+        } else if (accion === "cerrado" && loteActual) {
           _cerrarLote();
+        }
+        // mapRecorder maneja su propio ciclo con este mismo mensaje
+        return;
+      }
+
+      // ── HEARTBEAT / ESTADO DE NODO ───────────────────────────
+      if (topic === "vistax/nodos/estado" || topic === "vistax/nodos/heartbeat") {
+        const uid = payload.uid;
+        if (!uid || nodosInventory.estaIgnorado(uid)) return;
+
+        nodosInventory.upsertFromHeartbeat(payload);
+        estadoNodos[uid] = {
+          uid,
+          version:  payload.version  || estadoNodos[uid]?.version  || "?",
+          ip:       payload.ip       || estadoNodos[uid]?.ip       || "?",
+          rssi:     payload.rssi     ?? estadoNodos[uid]?.rssi     ?? null,
+          uptime_s: payload.uptime_s ?? estadoNodos[uid]?.uptime_s ?? 0,
+          heap:     payload.heap     || estadoNodos[uid]?.heap     || 0,
+          lastSeen: Date.now(),
+          online:   true,
+        };
+        io.emit("nodo_estado", estadoNodos[uid]);
+        io.emit("nodos_inventario_changed");
+        return;
+      }
+
+      // ── REGISTRO DE NODO ─────────────────────────────────────
+      if (topic === "vistax/nodos/registro") {
+        const uid = payload.uid;
+        nodosInventory.upsertFromHeartbeat(payload);
+        if (!uid) return;
+
+        if (nodosInventory.estaIgnorado(uid)) {
+          console.log(`\x1b[90m[VistaX]\x1b[0m Nodo ignorado se registró: ${uid}`);
+          return;
+        }
+
+        const { esNuevo } = nodosInventory.upsertFromHeartbeat(payload);
+        if (esNuevo) {
+          console.log(`\x1b[32m[VistaX]\x1b[0m 🆕 Nodo nuevo: ${uid} (FW: ${payload.firmware || "?"})`);
+          io.emit("new_node_detected", payload);
+        } else {
+          console.log(`\x1b[90m[VistaX]\x1b[0m Nodo conocido reconectado: ${uid}`);
+        }
+        io.emit("nodos_inventario_changed");
+        if (configFresca) {
+          setTimeout(() => publicarConfigCables({ publish }, configFresca), 500);
         }
         return;
       }
 
-      // ═══ ESTADO NODO (heartbeat) ═══
-      if (topic === "vistax/nodos/estado") {
-  const uid = payload.uid;
-  if (!uid) return;
-
-  // Si está ignorado, no actualizar (no queremos que aparezca en stats)
-  if (nodosInventory.estaIgnorado(uid)) return;
-
-  // Actualizar inventario central
-  nodosInventory.upsertFromHeartbeat(payload);
-
-  // Mantener compatibilidad con el legacy estadoNodos para getEstadoNodos()
-  estadoNodos[uid] = {
-    uid,
-    version:  payload.version  || estadoNodos[uid]?.version  || "?",
-    ip:       payload.ip       || estadoNodos[uid]?.ip       || "?",
-    rssi:     payload.rssi     ?? estadoNodos[uid]?.rssi     ?? null,
-    uptime_s: payload.uptime_s ?? estadoNodos[uid]?.uptime_s ?? 0,
-    heap:     payload.heap     || estadoNodos[uid]?.heap     || 0,
-    lastSeen: Date.now(),
-    online:   true,
-  };
-  io.emit("nodo_estado", estadoNodos[uid]);
-  io.emit("nodos_inventario_changed");
-  return;
-}
-
-      // ═══ REGISTRO NODOS ═══
-      if (topic === "vistax/nodos/registro") {
-  const uid = payload.uid;
-   nodosInventory.upsertFromHeartbeat(payload);
-  if (!uid) return;
-
-  // Si está ignorado, no notificar ni configurar
-  if (nodosInventory.estaIgnorado(uid)) {
-    console.log(`\x1b[90m[VistaX]\x1b[0m Nodo ignorado se registró: ${uid}`);
-    return;
-  }
-
-  // Upsert al inventario y detectar si es realmente nuevo
-  const { esNuevo } = nodosInventory.upsertFromHeartbeat(payload);
-
-  // Solo emitir toast si es la primera vez que se ve este UID
-  if (esNuevo) {
-    console.log(`\x1b[32m[VistaX]\x1b[0m 🆕 Nodo nuevo detectado: ${uid} (FW: ${payload.firmware || '?'})`);
-    io.emit("new_node_detected", payload);
-  } else {
-    console.log(`\x1b[90m[VistaX]\x1b[0m Nodo conocido reconectado: ${uid}`);
-  }
-
-  io.emit("nodos_inventario_changed");
-
-  // Republicar config de cables al nodo (siempre, cubre el caso de reinicio)
-  if (configFresca) {
-    setTimeout(() => publicarConfigCables({ publish }, configFresca), 500);
-  }
-  return;
-}
-
-      // ═══ TELEMETRÍA DE SENSORES ═══
+      // ── TELEMETRÍA DE SENSORES ───────────────────────────────
       if (topic === "vistax/nodos/telemetria") {
         const uidNodo = payload.uid;
-         if (payload?.uid) {
-    nodosInventory.upsertFromHeartbeat({ uid: payload.uid });
-  }
+        if (payload?.uid) nodosInventory.upsertFromHeartbeat({ uid: payload.uid });
         if (!payload.sensores || !configFresca?.mapeo_sensores) return;
 
         payload.sensores.forEach(sensorRaw => {
-          const cableFisico = parseInt(sensorRaw.cable);
+          const cableFisico  = parseInt(sensorRaw.cable);
           const sensorConfig = configFresca.mapeo_sensores.find(s => {
             const matchNodo  = s.uid === uidNodo;
             const matchPin   = s.pin   !== undefined && parseInt(s.pin)   === cableFisico - 1;
@@ -281,23 +283,15 @@ function initMQTT(io) {
             return matchNodo && (matchPin || matchCable);
           });
 
-          if (!sensorConfig) return;
-          if (sensorConfig.is_active === false) return;
+          if (!sensorConfig || sensorConfig.is_active === false) return;
 
-          // ╔══════════════════════════════════════════════════════╗
-          // ║  BAJADA DE HERRAMIENTA → cortocircuito hacia AOG     ║
-          // ╚══════════════════════════════════════════════════════╝
+          // BAJADA DE HERRAMIENTA → CoreX → AOG
           if (sensorConfig.tipo === "bajada_herramienta") {
             handleBajadaHerramienta(sensorConfig, sensorRaw, client, io);
             return;
           }
 
-          // ── (Futuro) otros tipos STATE ──
-          // tolva_vacia, tolva_llena, presion, final_carrera...
-          // si querés que solo se reflejen en UI sin lógica especial, dejá
-          // que caigan en el flujo normal de abajo (van a aparecer como sensor_update).
-
-          // ── Procesamiento normal (semilla / ferti / turbina / tolva) ──
+          // Procesamiento normal
           let alertaCritica = false;
           const valorFlujo  = parseFloat(sensorRaw.valor);
           const isSemilla   = sensorConfig.tipo === "semilla";
@@ -305,18 +299,14 @@ function initMQTT(io) {
           const rawPulsos   = parseInt(sensorRaw.raw) || 0;
           const numTren     = sensorConfig.tren || 1;
 
-          // ═══ DENSIDAD INDIVIDUAL ═══
           let semillasPorMetro = 0;
           if (telemetriaAOG.velocidad > 0.5) {
-            const velMs = telemetriaAOG.velocidad / 3.6;
-            semillasPorMetro = valorFlujo / velMs;
+            semillasPorMetro = valorFlujo / (telemetriaAOG.velocidad / 3.6);
           }
 
-          // Buffer para global stats
-          const bufKey = `${uidNodo}-${cableFisico}`;
-          statsBuffer[bufKey] = semillasPorMetro;
+          statsBuffer[`${uidNodo}-${cableFisico}`] = semillasPorMetro;
 
-          // ═══ ALERTAS CON OBJETIVO POR TREN ═══
+          // Alertas
           if (isSemilla || isFerti) {
             const seccionesTren = numTren === 1
               ? telemetriaAOG.seccionesT1
@@ -341,13 +331,11 @@ function initMQTT(io) {
                 alertaCritica = true;
               } else {
                 const objetivo = _objetivoTren(numTren);
-                if (objetivo > 0 && valorFlujo < objetivo * 0.5) {
-                  alertaCritica = true;
-                }
+                if (objetivo > 0 && valorFlujo < objetivo * 0.5) alertaCritica = true;
               }
             }
-
             sensorConfig._seccionCortada = seccionCortada;
+
           } else if (sensorConfig.tipo === "rotacion_eje" || sensorConfig.tipo === "turbina") {
             if (telemetriaAOG.velocidad > 1.5 && valorFlujo === 0) alertaCritica = true;
           }
@@ -367,25 +355,34 @@ function initMQTT(io) {
             seccion_cortada: sensorConfig._seccionCortada || false,
           });
 
-          // Grabar semilla georeferenciada
-          if (seedRecorder && rawPulsos > 0 && telemetriaAOG.lat) {
-            seedRecorder.append({
-              bajada: sensorConfig.bajada,
-              tipo:   sensorConfig.tipo,
-              pulsos: rawPulsos,
-              spm:    semillasPorMetro.toFixed(2),
-              lat:    telemetriaAOG.lat,
-              lon:    telemetriaAOG.lon,
-            });
+          // FIX 6: GRABAR EN MAPA DE SIEMBRA (mapRecorder singleton)
+          mapRecorder.onSensorData(
+            sensorConfig.bajada,
+            sensorConfig.tipo,
+            semillasPorMetro
+          );
+
+          // FIX 7: GRABAR SEMILLA GEORREFERENCIADA (API correcta del singleton)
+          // La posición ya fue alimentada en el handler de aog/machine/position (FIX 8)
+          if (rawPulsos > 0 && telemetriaAOG.lat) {
+            try {
+              seedRecorder.registrarVentana(
+                uidNodo,
+                sensorConfig.bajada,
+                rawPulsos,
+                Date.now()
+              );
+            } catch (e) { /* lote no activo en seedRecorder — ignorar */ }
           }
         });
       }
+
     } catch (e) {
       console.error("🚨 ERROR FATAL procesando MQTT:", e);
     }
   });
 
-  // ═══ SOCKET: Omisión de sensor desde ventana detalle ═══
+  // ── SOCKET: Omisión de sensor ─────────────────────────────────
   io.on("connection", (clientSocket) => {
     clientSocket.on("toggle_omitir_sensor", (data) => {
       const { bajada, tren, omitido } = data;
@@ -394,75 +391,41 @@ function initMQTT(io) {
     });
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // Bajada de herramienta → publica comando para CoreX → AOG
-  // ─────────────────────────────────────────────────────────────
+  // ── Bajada de herramienta ──────────────────────────────────────
   function handleBajadaHerramienta(cfg, sensor, mqttClient, io) {
-    const key = `${cfg.uid}_${cfg.cable}`;
-
-    const raw = parseInt(sensor.raw) || 0;
-    const val = parseFloat(sensor.valor) || 0;
+    const key  = `${cfg.uid}_${cfg.cable}`;
+    const raw  = parseInt(sensor.raw)     || 0;
+    const val  = parseFloat(sensor.valor) || 0;
     let estado = (raw > 0 || val > 0) ? 1 : 0;
     if (cfg.logica_invertida === true) estado = estado ? 0 : 1;
 
-    const prev = estadoHerramienta.get(key) || {
-      value:         null,
-      pending:       null,
-      debounceTimer: null,
-    };
+    const prev = estadoHerramienta.get(key) || { value: null, pending: null, debounceTimer: null };
 
     if (estado === prev.value && prev.pending === null) return;
-    if (prev.pending === estado && prev.debounceTimer) return;
+    if (prev.pending === estado && prev.debounceTimer)  return;
     if (prev.debounceTimer) clearTimeout(prev.debounceTimer);
 
     const timer = setTimeout(() => {
-      const payloadAog = {
+      mqttClient.publish(TOPIC_AOG_CMD, JSON.stringify({
         funcion: "bajada_herramienta",
         value:   estado,
         source:  { uid: cfg.uid, cable: cfg.cable, nombre: cfg.nombre },
         ts:      Date.now(),
-      };
+      }), { qos: 1 });
 
-      mqttClient.publish(TOPIC_AOG_CMD, JSON.stringify(payloadAog), { qos: 1 });
-
-      estadoHerramienta.set(key, {
-        value:         estado,
-        pending:       null,
-        debounceTimer: null,
-        lastSent:      Date.now(),
-      });
+      estadoHerramienta.set(key, { value: estado, pending: null, debounceTimer: null, lastSent: Date.now() });
 
       console.log(
         `\x1b[35m[AOG-CMD]\x1b[0m 🔧 ${cfg.nombre} (${cfg.uid}/c${cfg.cable}) → ` +
         `${estado === 1 ? "BAJADA ⬇" : "LEVANTADA ⬆"}`
       );
-
-      io.emit("herramienta_update", {
-        uid:    cfg.uid,
-        cable:  cfg.cable,
-        nombre: cfg.nombre,
-        estado,
-      });
+      io.emit("herramienta_update", { uid: cfg.uid, cable: cfg.cable, nombre: cfg.nombre, estado });
     }, DEBOUNCE_HERRAMIENTA_MS);
 
-    estadoHerramienta.set(key, {
-      value:         prev.value,
-      pending:       estado,
-      debounceTimer: timer,
-      lastSent:      prev.lastSent || 0,
-    });
+    estadoHerramienta.set(key, { value: prev.value, pending: estado, debounceTimer: timer, lastSent: prev.lastSent || 0 });
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // API pública del módulo (para rutas Express)
-  // ─────────────────────────────────────────────────────────────
-
-  /**
-   * Publica un mensaje MQTT con opciones (retain, qos, etc).
-   * @param {string} topic
-   * @param {string|object} payload
-   * @param {object} [opts]  { retain, qos }
-   */
+  // ── API pública para rutas Express ────────────────────────────
   function publish(topic, payload, opts) {
     if (!client.connected) {
       console.warn("[MQTT] No conectado — no se puede publicar en:", topic);
@@ -478,34 +441,19 @@ function initMQTT(io) {
     return true;
   }
 
-  /**
-   * Devuelve el estado conocido de los nodos (para panel OTA / dashboards).
-   * Marca como offline los que no enviaron heartbeat en > 60s.
-   */
   function getEstadoNodos() {
     const now = Date.now();
-    Object.values(estadoNodos).forEach(n => {
-      n.online = now - n.lastSeen < 60000;
-    });
+    Object.values(estadoNodos).forEach(n => { n.online = now - n.lastSeen < 60000; });
     return estadoNodos;
   }
 
-  /**
-   * Forzar republicación de la config de cables a los nodos.
-   * Útil cuando se cambia el perfil activo desde una ruta Express.
-   */
   function republicarConfigCables() {
     if (!configFresca) return false;
     publicarConfigCables({ publish }, configFresca);
     return true;
   }
 
-  return {
-    client,
-    publish,
-    getEstadoNodos,
-    republicarConfigCables,
-  };
+  return { client, publish, getEstadoNodos, republicarConfigCables };
 }
 
 module.exports = initMQTT;

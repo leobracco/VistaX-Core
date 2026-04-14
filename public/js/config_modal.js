@@ -1,5 +1,19 @@
 // ============================================================
-// VistaX — config_modal.js  v5
+// VistaX — config_modal.js  v2.5
+//
+// CAMBIOS v2.5:
+//   1. [NEW] Tab Trenes funcional: el usuario define cantidad de trenes
+//      y cantidad de surcos por tren. La numeración se calcula automáticamente.
+//   2. [FIX] _onTrenCambiado ahora respeta los rangos de los trenes:
+//      - Si hay estructura definida, busca huecos dentro del rango del tren.
+//      - Si no hay estructura, muestra aviso y no hace nada.
+//   3. [FIX] renderizarTablaNodo ya no dispara autonumerado automático.
+//      El autonumerado solo ocurre cuando el usuario cambia el selector de Tren.
+//   4. [FIX] Pre-carga de cables vacíos solo en acción explícita (cambiarNodo),
+//      nunca en renders internos de actualizarSelectNodos.
+//
+// CAMBIOS v2.4:
+//   1. Dropdown de sensores no se refresca por Socket.IO (no pisa edición).
 //
 // CAMBIOS v5:
 //   1. Checkbox is_active en tabla (soft-delete, nunca se borra)
@@ -10,6 +24,7 @@
 
 let workingMapeo = [];
 let nodoActual = "";
+let _estructuraTrenes = null; // {"2": {surcos:20, orden:1, nombre:"Trasero"}, ...}
 
 const ETIQUETAS = {
   semilla: "Semilla",
@@ -50,19 +65,36 @@ function _trenesExistentes() {
 
 /**
  * Genera las opciones del select de tren dinámicamente.
- * Siempre incluye los que ya existen + opción de "Nuevo tren".
+ * Usa la estructura definida (_estructuraTrenes) si existe,
+ * si no cae a los trenes presentes en el workingMapeo.
  */
 function _opcionesTren(trenSeleccionado) {
-  const existentes = _trenesExistentes();
-  const maxTren = existentes.length > 0 ? Math.max(...existentes) : 1;
-  // Ofrecer hasta maxTren + 1 para poder crear uno nuevo
-  const opciones = [];
-  for (let i = 1; i <= Math.max(maxTren + 1, 2); i++) {
-    const sel = (trenSeleccionado || 1) == i ? "selected" : "";
-    const label =
-      i <= 2 ? `Tren ${i} (${i === 1 ? "Delantero" : "Trasero"})` : `Tren ${i}`;
-    opciones.push(`<option value="${i}" ${sel}>${label}</option>`);
+  let trenesDisponibles = [];
+
+  if (_estructuraTrenes && Object.keys(_estructuraTrenes).length > 0) {
+    trenesDisponibles = Object.keys(_estructuraTrenes)
+      .map((k) => parseInt(k))
+      .filter((n) => !isNaN(n))
+      .sort((a, b) => a - b);
+  } else {
+    const existentes = _trenesExistentes();
+    const maxTren = existentes.length > 0 ? Math.max(...existentes) : 1;
+    for (let i = 1; i <= Math.max(maxTren + 1, 2); i++) trenesDisponibles.push(i);
   }
+
+  if (trenesDisponibles.length === 0) trenesDisponibles = [1, 2];
+
+  const opciones = trenesDisponibles.map((i) => {
+    const sel = (trenSeleccionado || 1) == i ? "selected" : "";
+    let label;
+    if (_estructuraTrenes && _estructuraTrenes[String(i)]?.nombre) {
+      label = `Tren ${i} (${_estructuraTrenes[String(i)].nombre})`;
+    } else {
+      label = i <= 2 ? `Tren ${i} (${i === 1 ? "Delantero" : "Trasero"})` : `Tren ${i}`;
+    }
+    return `<option value="${i}" ${sel}>${label}</option>`;
+  });
+
   return opciones.join("");
 }
 
@@ -100,6 +132,7 @@ function _mostrarModal() {
   if (txtId) txtId.innerText = `ID: ${APP_CONFIG.id || "N/A"}`;
 
   workingMapeo = JSON.parse(JSON.stringify(APP_CONFIG.mapeo_sensores || []));
+  _cargarEstructuraTrenes();
   _renderizarObjetivosTren();
   _cargarConfigMonitoreo();
   actualizarSelectNodos();
@@ -141,7 +174,7 @@ async function actualizarSelectNodos(nodoForzado = null) {
   if (!select) return;
 
   // 1. UIDs que ya están mapeados en el perfil actual
-  const uidsEnPerfil = [...new Set(workingMapeo.map(s => s.uid))];
+  const uidsEnPerfil = [...new Set(workingMapeo.map((s) => s.uid))];
 
   // 2. UIDs del inventario central (nodos vistos por MQTT)
   try {
@@ -153,8 +186,8 @@ async function actualizarSelectNodos(nodoForzado = null) {
   }
 
   const uidsInventario = _nodosInventarioCache
-    .filter(n => !n.ignorado)
-    .map(n => n.uid);
+    .filter((n) => !n.ignorado)
+    .map((n) => n.uid);
 
   // 3. Unir ambos sets
   const todos = [...new Set([...uidsEnPerfil, ...uidsInventario])];
@@ -162,9 +195,9 @@ async function actualizarSelectNodos(nodoForzado = null) {
 
   // 4. Pintar el select marcando los que no están en el perfil
   select.innerHTML = "";
-  todos.sort().forEach(uid => {
+  todos.sort().forEach((uid) => {
     const enPerfil = uidsEnPerfil.includes(uid);
-    const invNodo = _nodosInventarioCache.find(n => n.uid === uid);
+    const invNodo = _nodosInventarioCache.find((n) => n.uid === uid);
     const online = invNodo?.online ? "🟢" : invNodo ? "⚪" : "";
     const marca = enPerfil ? "" : " · SIN MAPEAR";
     const label = `${online} ${uid}${marca}`.trim();
@@ -173,17 +206,20 @@ async function actualizarSelectNodos(nodoForzado = null) {
 
   nodoActual = nodoForzado || todos[0];
   select.value = nodoActual;
-  renderizarTablaNodo(nodoActual);
+
+  // Render INTERNO: no inicializa cables vacíos para nodos no mapeados.
+  // La pre-carga solo ocurre cuando el usuario selecciona un nodo explícitamente
+  // en el dropdown (eso dispara cambiarNodo -> renderizarTablaNodo(uid, true)).
+  renderizarTablaNodo(nodoActual, false);
 }
 
 function guardarEstadoTablaActual() {
   if (!nodoActual) return;
   workingMapeo = workingMapeo.filter((s) => s.uid !== nodoActual);
-  const filas = document.querySelectorAll(
-    "#lista-sensores-tbody tr.sensor-row",
-  );
+  const filas = document.querySelectorAll("#lista-sensores-tbody tr.sensor-row");
   filas.forEach((fila) => {
-    const bajada = parseInt(fila.querySelector(".edit-bajada").value);
+    const bajadaRaw = fila.querySelector(".edit-bajada").value;
+    const bajada = bajadaRaw === "" ? "" : parseInt(bajadaRaw);
     const tipo = fila.querySelector(".edit-tipo").value;
     const isActive = fila.querySelector(".edit-active")?.checked !== false;
     workingMapeo.push({
@@ -201,7 +237,19 @@ function guardarEstadoTablaActual() {
 function cambiarNodo() {
   guardarEstadoTablaActual();
   nodoActual = document.getElementById("select-nodo-filter").value;
-  renderizarTablaNodo(nodoActual);
+
+  // Si el usuario selecciona el nodo desde otro tab, traer a Sensores automáticamente
+  const target = document.getElementById("tab-sensores");
+  if (target && target.style.display === "none") {
+    document.querySelectorAll(".tab-content").forEach((t) => (t.style.display = "none"));
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    target.style.display = "block";
+    const btn = document.querySelector(`button[onclick="switchTab('sensores')"]`);
+    if (btn) btn.classList.add("active");
+  }
+
+  // true: es acción explícita del usuario, pre-carga cables vacíos si no hay
+  renderizarTablaNodo(nodoActual, true);
 }
 
 function agregarNuevoNodo() {
@@ -222,17 +270,16 @@ function agregarNuevoNodo() {
 }
 
 // --- TABLA ---
-function renderizarTablaNodo(uid) {
+function renderizarTablaNodo(uid, inicializarSiVacio = false) {
   const tbody = document.getElementById("lista-sensores-tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  let sensoresNodo = workingMapeo.filter(s => s.uid === uid);
+  let sensoresNodo = workingMapeo.filter((s) => s.uid === uid);
 
-  // Si el nodo existe en el inventario pero no tiene filas en el perfil,
-  // generar automáticamente los cables según su capacidad (default 7)
-  if (sensoresNodo.length === 0) {
-    const invNodo = _nodosInventarioCache.find(n => n.uid === uid);
+  // Solo pre-cargamos cables vacíos cuando fue una acción explícita del usuario
+  if (sensoresNodo.length === 0 && inicializarSiVacio) {
+    const invNodo = _nodosInventarioCache.find((n) => n.uid === uid);
     const capacidad = invNodo?.capacidad_cables || 7;
     for (let i = 1; i <= capacidad; i++) {
       const fila = {
@@ -246,12 +293,12 @@ function renderizarTablaNodo(uid) {
       workingMapeo.push(fila);
       sensoresNodo.push(fila);
     }
-    console.log(`[config_modal] Nodo ${uid} pre-cargado con ${capacidad} cables vacíos`);
+    console.log(`[config_modal v2.5] Nodo ${uid} pre-cargado con ${capacidad} cables vacíos`);
   }
 
   sensoresNodo
     .sort((a, b) => a.cable - b.cable)
-    .forEach(sensor => agregarFilaSensor(sensor));
+    .forEach((sensor) => agregarFilaSensor(sensor));
 }
 
 function agregarFilaSensor(datos = null) {
@@ -269,7 +316,6 @@ function agregarFilaSensor(datos = null) {
   const row = document.createElement("tr");
   row.className = "sensor-row";
 
-  // Estilo visual si está inactivo
   if (datos.is_active === false) row.style.opacity = "0.35";
 
   const opcionesTipo = [
@@ -295,7 +341,7 @@ function agregarFilaSensor(datos = null) {
   row.innerHTML = `
     <td><input type="number" class="edit-cable" value="${datos.cable}" min="1" max="7"></td>
     <td><input type="number" class="edit-bajada" value="${datos.bajada}"></td>
-    <td><select class="edit-tren">${_opcionesTren(datos.tren)}</select></td>
+    <td><select class="edit-tren" onchange="_onTrenCambiado(this)">${_opcionesTren(datos.tren)}</select></td>
     <td><select class="edit-tipo">${selectHTML}</select></td>
     <td style="text-align:center">
       <input type="checkbox" class="edit-active" ${isActive ? "checked" : ""}
@@ -306,22 +352,469 @@ function agregarFilaSensor(datos = null) {
   tbody.appendChild(row);
 }
 
+// ============================================================
+// [v2.5] AUTOCOMPLETADO DE NUMERACIÓN DE BAJADAS
+// ============================================================
+
+/**
+ * Calcula los rangos (inicio-fin) de cada tren, basado en _estructuraTrenes.
+ * Misma lógica que profiles_manager.calcularRangosTrenes del backend.
+ * Retorna null si no hay estructura definida.
+ */
+function _calcularRangosTrenes() {
+  if (!_estructuraTrenes || Object.keys(_estructuraTrenes).length === 0) {
+    return null;
+  }
+
+  const trenesArray = Object.keys(_estructuraTrenes)
+    .map((id) => {
+      const cfg = _estructuraTrenes[id] || {};
+      return {
+        id: String(id),
+        surcos: parseInt(cfg.surcos) || 0,
+        orden: parseInt(cfg.orden) || 99,
+        nombre: cfg.nombre || `Tren ${id}`,
+      };
+    })
+    .filter((t) => t.surcos > 0)
+    .sort((a, b) => a.orden - b.orden);
+
+  if (trenesArray.length === 0) return null;
+
+  const rangos = {};
+  let siguiente = 1;
+  trenesArray.forEach((t) => {
+    rangos[t.id] = {
+      inicio: siguiente,
+      fin: siguiente + t.surcos - 1,
+      surcos: t.surcos,
+      orden: t.orden,
+      nombre: t.nombre,
+    };
+    siguiente += t.surcos;
+  });
+
+  return { rangos, totalSurcos: siguiente - 1 };
+}
+
+/**
+ * Se dispara al cambiar el selector de Tren en una fila.
+ * Comportamiento:
+ *   - Si la fila que cambió ya tiene bajada asignada → no hace nada.
+ *   - Si no hay estructura de trenes definida → muestra aviso y no hace nada.
+ *   - Si hay estructura → busca huecos libres dentro del rango del tren elegido,
+ *     considerando workingMapeo + lo que el usuario tiene tipeado en el DOM.
+ *     Asigna los cables del nodo actual a los huecos en orden de cable.
+ *   - Respeta filas que ya tengan bajada asignada (edición manual).
+ */
+window._onTrenCambiado = function (selectEl) {
+  const fila = selectEl.closest("tr");
+  if (!fila) return;
+
+  const inputBajadaEsta = fila.querySelector(".edit-bajada");
+  if (!inputBajadaEsta) return;
+
+  // Si la fila que cambió el tren ya tiene bajada, no autocompleto nada
+  if (inputBajadaEsta.value.trim() !== "") return;
+
+  const trenElegido = parseInt(selectEl.value);
+  if (isNaN(trenElegido)) return;
+
+  const estructura = _calcularRangosTrenes();
+
+  if (!estructura) {
+    _toast(
+      "Definí la estructura de trenes en la pestaña 'Trenes' para activar el autonumerado",
+      "warn"
+    );
+    return;
+  }
+
+  const rangoTren = estructura.rangos[String(trenElegido)];
+  if (!rangoTren) {
+    _toast(
+      `El Tren ${trenElegido} no está en la estructura definida. Revisá el tab Trenes.`,
+      "warn"
+    );
+    return;
+  }
+
+  // 1. Recolectar todas las bajadas ocupadas (workingMapeo + DOM del nodo actual)
+  const bajadasOcupadas = new Set();
+
+  workingMapeo.forEach((s) => {
+    if (s.is_active === false) return;
+    const b = parseInt(s.bajada);
+    if (!isNaN(b)) bajadasOcupadas.add(b);
+  });
+
+  // Lo que el usuario tiene tipeado EN ESTE MOMENTO en el DOM puede ser más
+  // nuevo que el workingMapeo. Leemos el DOM para no perder ediciones no guardadas.
+  document.querySelectorAll("#lista-sensores-tbody tr.sensor-row").forEach((f) => {
+    const inp = f.querySelector(".edit-bajada");
+    const val = inp?.value.trim();
+    if (val !== "" && !isNaN(parseInt(val))) {
+      bajadasOcupadas.add(parseInt(val));
+    }
+  });
+
+  // 2. Generar lista de huecos libres dentro del rango del tren elegido
+  const huecosLibres = [];
+  for (let n = rangoTren.inicio; n <= rangoTren.fin; n++) {
+    if (!bajadasOcupadas.has(n)) huecosLibres.push(n);
+  }
+
+  if (huecosLibres.length === 0) {
+    _toast(
+      `Tren ${trenElegido} (${rangoTren.nombre}) está completo. No hay huecos libres.`,
+      "warn"
+    );
+    return;
+  }
+
+  // 3. Recorrer las filas del nodo actual en orden de cable y llenar las vacías
+  //    del tren elegido con los huecos libres
+  const todasLasFilas = Array.from(
+    document.querySelectorAll("#lista-sensores-tbody tr.sensor-row")
+  ).sort((a, b) => {
+    const ca = parseInt(a.querySelector(".edit-cable").value) || 0;
+    const cb = parseInt(b.querySelector(".edit-cable").value) || 0;
+    return ca - cb;
+  });
+
+  let asignadas = 0;
+  let huecoIdx = 0;
+
+  todasLasFilas.forEach((f) => {
+    const inputBajada = f.querySelector(".edit-bajada");
+    const selectTren = f.querySelector(".edit-tren");
+    if (!inputBajada || !selectTren) return;
+
+    if (
+      inputBajada.value.trim() === "" &&
+      parseInt(selectTren.value) === trenElegido &&
+      huecoIdx < huecosLibres.length
+    ) {
+      inputBajada.value = huecosLibres[huecoIdx];
+      huecoIdx++;
+      asignadas++;
+    }
+  });
+
+  // Detectar cuántas filas quedaron sin asignar por falta de huecos
+  const filasDelTrenSinAsignar = Array.from(
+    document.querySelectorAll("#lista-sensores-tbody tr.sensor-row")
+  ).filter(
+    (f) =>
+      f.querySelector(".edit-bajada").value.trim() === "" &&
+      parseInt(f.querySelector(".edit-tren").value) === trenElegido
+  );
+  const sinAsignar = filasDelTrenSinAsignar.length;
+
+  if (asignadas > 0) {
+    console.log(
+      `[ConfigModal v2.5] Autonumerado ${asignadas} bajada(s) del nodo ${nodoActual} en Tren ${trenElegido} (${rangoTren.nombre}, rango ${rangoTren.inicio}-${rangoTren.fin})`
+    );
+    if (sinAsignar > 0) {
+      _toast(
+        `Se asignaron ${asignadas} bajadas. Quedaron ${sinAsignar} cables sin asignar (Tren ${trenElegido} sin huecos suficientes).`,
+        "warn"
+      );
+    } else {
+      _toast(`Se asignaron ${asignadas} bajadas en Tren ${trenElegido}`, "ok");
+    }
+  }
+};
+
+// ============================================================
+// [v2.5] TAB TRENES — Definición de estructura
+// ============================================================
+
+/**
+ * Carga la estructura de trenes desde APP_CONFIG al abrir el modal.
+ * Si no existe, inicializa vacía (el usuario tiene que definirla).
+ */
+function _cargarEstructuraTrenes() {
+  if (APP_CONFIG?.trenes && typeof APP_CONFIG.trenes === "object") {
+    _estructuraTrenes = JSON.parse(JSON.stringify(APP_CONFIG.trenes));
+  } else {
+    _estructuraTrenes = {};
+  }
+}
+
+/**
+ * Re-renderiza todo el tab Trenes (cantidad + lista + preview + warning).
+ * Se llama al entrar al tab y después de cada cambio del usuario.
+ */
+function _renderizarTabTrenes() {
+  const qtyInput = document.getElementById("cfg-qty-trenes");
+  const lista = document.getElementById("cfg-trenes-lista");
+  const preview = document.getElementById("cfg-trenes-preview");
+  const warning = document.getElementById("cfg-trenes-warning");
+
+  if (!qtyInput || !lista || !preview) return;
+
+  if (!_estructuraTrenes) _estructuraTrenes = {};
+
+  // Si no hay trenes definidos, crear uno por default para arrancar
+  if (Object.keys(_estructuraTrenes).length === 0) {
+    _estructuraTrenes["1"] = { surcos: 0, orden: 1, nombre: "Delantero" };
+  }
+
+  qtyInput.value = Object.keys(_estructuraTrenes).length;
+
+  // Pintar una card por cada tren, ordenado por 'orden'
+  const trenesArray = Object.keys(_estructuraTrenes)
+    .map((id) => ({
+      id,
+      ...(_estructuraTrenes[id] || {}),
+      orden: parseInt(_estructuraTrenes[id]?.orden) || 99,
+    }))
+    .sort((a, b) => a.orden - b.orden);
+
+  lista.innerHTML = "";
+  trenesArray.forEach((t) => {
+    const card = document.createElement("div");
+    card.className = "input-card";
+    card.style.cssText =
+      "display:grid; grid-template-columns: 80px 1fr 1fr 120px; gap:12px; align-items:end;";
+    card.innerHTML = `
+      <div>
+        <label>ID Tren</label>
+        <input type="number" min="1" max="10" value="${t.id}"
+               data-old-id="${t.id}"
+               onchange="_onTrenIdChange(this)">
+      </div>
+      <div>
+        <label>Nombre</label>
+        <input type="text" value="${t.nombre || ''}"
+               placeholder="Ej: Trasero"
+               onchange="_onTrenFieldChange('${t.id}', 'nombre', this.value)">
+      </div>
+      <div>
+        <label>Cantidad de Surcos</label>
+        <input type="number" min="0" max="200" value="${t.surcos || 0}"
+               onchange="_onTrenFieldChange('${t.id}', 'surcos', this.value)">
+      </div>
+      <div>
+        <label>Orden</label>
+        <input type="number" min="1" max="10" value="${t.orden || 1}"
+               title="1 = se numera primero, 2 = sigue al anterior..."
+               onchange="_onTrenFieldChange('${t.id}', 'orden', this.value)">
+      </div>
+    `;
+    lista.appendChild(card);
+  });
+
+  // Preview calculado
+  const estructura = _calcularRangosTrenes();
+  if (!estructura || estructura.totalSurcos === 0) {
+    preview.innerHTML =
+      "<strong>Sin estructura definida.</strong> Ingresá cantidad de surcos para ver los rangos.";
+  } else {
+    const lineas = Object.keys(estructura.rangos)
+      .sort((a, b) => estructura.rangos[a].orden - estructura.rangos[b].orden)
+      .map((id) => {
+        const r = estructura.rangos[id];
+        return `<div><strong>Tren ${id}</strong> (${r.nombre}): surcos <strong>${r.inicio}</strong> al <strong>${r.fin}</strong> (${r.surcos} surcos)</div>`;
+      });
+    preview.innerHTML =
+      `${lineas.join("")}<div style="margin-top:8px; font-weight:bold; color:var(--accent);">Total: ${estructura.totalSurcos} surcos</div>`;
+  }
+
+  // Warning si el mapeo_sensores tiene bajadas fuera de los rangos definidos
+  if (warning) {
+    const problemas = _validarMapeoContraEstructura();
+    if (problemas.length === 0) {
+      warning.style.display = "none";
+    } else {
+      warning.style.display = "block";
+      warning.innerHTML =
+        "<strong>⚠ Advertencias:</strong><ul style='margin:8px 0 0 20px; padding:0;'>" +
+        problemas.map((p) => `<li>${p}</li>`).join("") +
+        "</ul>";
+    }
+  }
+}
+
+/**
+ * Verifica consistencia entre estructura y mapeo_sensores.
+ * Retorna array de mensajes de advertencia (strings).
+ */
+function _validarMapeoContraEstructura() {
+  const problemas = [];
+  const estructura = _calcularRangosTrenes();
+  if (!estructura) return problemas;
+
+  // Bajadas activas del mapeo, agrupadas por tren
+  const porTren = {};
+  workingMapeo.forEach((s) => {
+    if (s.is_active === false) return;
+    if (
+      s.tipo !== "semilla" &&
+      s.tipo !== "ferti_linea" &&
+      s.tipo !== "ferti_costado"
+    )
+      return;
+    const t = String(s.tren || 1);
+    if (!porTren[t]) porTren[t] = [];
+    const b = parseInt(s.bajada);
+    if (!isNaN(b)) porTren[t].push(b);
+  });
+
+  Object.keys(porTren).forEach((idTren) => {
+    const rango = estructura.rangos[idTren];
+    if (!rango) {
+      problemas.push(
+        `Hay sensores asignados al Tren ${idTren} pero ese tren no existe en la estructura.`
+      );
+      return;
+    }
+    const fuera = porTren[idTren].filter((b) => b < rango.inicio || b > rango.fin);
+    if (fuera.length > 0) {
+      problemas.push(
+        `Tren ${idTren} (${rango.nombre}): hay ${fuera.length} bajada(s) fuera del rango ${rango.inicio}-${rango.fin} → ${fuera.sort((a, b) => a - b).join(", ")}`
+      );
+    }
+  });
+
+  return problemas;
+}
+
+/**
+ * Handler: el usuario cambió la cantidad de trenes.
+ * Crea o borra entradas en _estructuraTrenes según corresponda.
+ */
+window._onCantTrenesChange = function () {
+  const qtyInput = document.getElementById("cfg-qty-trenes");
+  if (!qtyInput) return;
+
+  const nueva = Math.max(1, Math.min(10, parseInt(qtyInput.value) || 1));
+  const clavesActuales = Object.keys(_estructuraTrenes || {});
+
+  if (nueva > clavesActuales.length) {
+    // Agregar trenes faltantes con IDs nuevos no usados
+    for (let i = 1; i <= 10 && Object.keys(_estructuraTrenes).length < nueva; i++) {
+      if (!_estructuraTrenes[String(i)]) {
+        const ordenExistente = Math.max(
+          0,
+          ...Object.values(_estructuraTrenes).map((t) => parseInt(t.orden) || 0)
+        );
+        _estructuraTrenes[String(i)] = {
+          surcos: 0,
+          orden: ordenExistente + 1,
+          nombre: i === 1 ? "Delantero" : i === 2 ? "Trasero" : `Tren ${i}`,
+        };
+      }
+    }
+  } else if (nueva < clavesActuales.length) {
+    // Quitar los trenes con mayor 'orden' hasta dejar 'nueva'
+    const ordenados = clavesActuales
+      .map((id) => ({ id, orden: parseInt(_estructuraTrenes[id].orden) || 99 }))
+      .sort((a, b) => b.orden - a.orden);
+    const aBorrar = ordenados.slice(0, clavesActuales.length - nueva);
+    aBorrar.forEach((t) => {
+      delete _estructuraTrenes[t.id];
+    });
+  }
+
+  _renderizarTabTrenes();
+};
+
+/**
+ * Handler: el usuario cambió nombre, surcos u orden de un tren.
+ */
+window._onTrenFieldChange = function (idTren, campo, valor) {
+  if (!_estructuraTrenes[idTren]) return;
+
+  if (campo === "nombre") {
+    _estructuraTrenes[idTren].nombre = String(valor).trim().substring(0, 32);
+  } else if (campo === "surcos") {
+    _estructuraTrenes[idTren].surcos = Math.max(0, parseInt(valor) || 0);
+  } else if (campo === "orden") {
+    _estructuraTrenes[idTren].orden = Math.max(1, parseInt(valor) || 1);
+  }
+
+  _renderizarTabTrenes();
+};
+
+/**
+ * Handler: el usuario cambió el ID numérico de un tren.
+ * Mueve la entrada de _estructuraTrenes de la clave vieja a la nueva.
+ */
+window._onTrenIdChange = function (inputEl) {
+  const idViejo = String(inputEl.dataset.oldId);
+  const idNuevo = String(Math.max(1, parseInt(inputEl.value) || 1));
+
+  if (idViejo === idNuevo) return;
+
+  if (_estructuraTrenes[idNuevo]) {
+    _toast(`Ya existe el Tren ${idNuevo}. Elegí otro ID.`, "warn");
+    inputEl.value = idViejo;
+    return;
+  }
+
+  _estructuraTrenes[idNuevo] = _estructuraTrenes[idViejo];
+  delete _estructuraTrenes[idViejo];
+
+  _renderizarTabTrenes();
+};
+
+// ============================================================
+// TOAST MINIMALISTA
+// ============================================================
+
+function _toast(mensaje, tipo) {
+  if (!tipo) tipo = "ok";
+  let host = document.getElementById("config-toast-host");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "config-toast-host";
+    host.style.cssText =
+      "position:fixed; top:80px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; max-width:360px;";
+    document.body.appendChild(host);
+  }
+
+  const colores = {
+    ok: { bg: "#1a3a1a", border: "#4ade80", color: "#dcfce7" },
+    warn: { bg: "#3a2a0a", border: "#ffa500", color: "#fed7aa" },
+    err: { bg: "#3a1a1a", border: "#ff4444", color: "#fecaca" },
+  };
+  const c = colores[tipo] || colores.ok;
+
+  const toast = document.createElement("div");
+  toast.style.cssText =
+    "background:" + c.bg + "; color:" + c.color + "; border-left:4px solid " + c.border + "; " +
+    "padding:12px 16px; border-radius:6px; font-size:14px; " +
+    "box-shadow:0 4px 12px rgba(0,0,0,0.4); opacity:0; " +
+    "transition:opacity 0.3s ease;";
+  toast.textContent = mensaje;
+  host.appendChild(toast);
+
+  requestAnimationFrame(() => (toast.style.opacity = "1"));
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
 // --- TABS ---
 window.switchTab = function (tabId) {
-  if (tabId === 'perfiles') cargarPerfiles();
+  if (tabId === "sensores") {
+    actualizarSelectNodos(nodoActual).catch((e) =>
+      console.warn("[ConfigModal v2.5] No se pudo refrescar nodos:", e.message)
+    );
+  }
+  if (tabId === "perfiles" && typeof cargarPerfiles === "function") cargarPerfiles();
+  if (tabId === "trenes") _renderizarTabTrenes();
   if (tabId === "mapeo") guardarEstadoTablaActual();
-  document
-    .querySelectorAll(".tab-content")
-    .forEach((t) => (t.style.display = "none"));
-  document
-    .querySelectorAll(".tab-btn")
-    .forEach((b) => b.classList.remove("active"));
+
+  document.querySelectorAll(".tab-content").forEach((t) => (t.style.display = "none"));
+  document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
   const target = document.getElementById(`tab-${tabId}`);
   if (target) {
     target.style.display = "block";
-    const btn = document.querySelector(
-      `button[onclick="switchTab('${tabId}')"]`,
-    );
+    const btn = document.querySelector(`button[onclick="switchTab('${tabId}')"]`);
     if (btn) btn.classList.add("active");
   }
   if (tabId === "mapeo") dibujarPlanta();
@@ -343,7 +836,7 @@ function dibujarPlanta() {
   ];
 
   workingMapeo.forEach((s) => {
-    if (s.is_active === false) return; // No dibujar inactivos
+    if (s.is_active === false) return;
     if (tiposEspeciales.includes(s.tipo)) {
       if (!grupos.especiales) grupos.especiales = [];
       grupos.especiales.push(s);
@@ -354,7 +847,6 @@ function dibujarPlanta() {
     }
   });
 
-  // Trenes en orden ascendente
   const trenesKeys = Object.keys(grupos)
     .filter((k) => k.startsWith("tren"))
     .sort();
@@ -395,8 +887,7 @@ function dibujarPlanta() {
     espRow.className = "mapeo-tren-row";
     espRow.innerHTML = `<small>SENSORES DE ESTADO</small>`;
     const grid = document.createElement("div");
-    grid.style.cssText =
-      "display:flex;gap:8px;flex-wrap:wrap;justify-content:center";
+    grid.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center";
     const ICONOS = {
       rotacion_eje: "fas fa-cogs",
       turbina: "fas fa-fan",
@@ -424,7 +915,8 @@ function validarDuplicados() {
   let vistos = new Set();
   for (let i = 0; i < workingMapeo.length; i++) {
     let s = workingMapeo[i];
-    if (s.is_active === false) continue; // Inactivos no cuentan como duplicado
+    if (s.is_active === false) continue;
+    if (s.bajada === "" || isNaN(parseInt(s.bajada))) continue;
     let clave = `${s.tipo}-${s.bajada}`;
     if (vistos.has(clave)) {
       alert(`⚠️ ERROR: Duplicado "${s.tipo}" en bajada ${s.bajada}.`);
@@ -444,7 +936,6 @@ async function guardarConfiguracionCompleta() {
 
   _generarNombresAutomaticos();
 
-  // Leer objetivos por tren
   const objetivosPorTren = {};
   document.querySelectorAll(".cfg-obj-tren").forEach((inp) => {
     const t = inp.dataset.tren;
@@ -464,16 +955,14 @@ async function guardarConfiguracionCompleta() {
         parseFloat(document.getElementById("input-objetivo")?.value) || 16,
       objetivos_tren: objetivosPorTren,
       tolerancia_desvio:
-        parseFloat(document.getElementById("cfg-tolerancia-desvio")?.value) ||
-        20,
-      rpm_min:
-        parseFloat(document.getElementById("cfg-rpm-min")?.value) || 2000,
-      rpm_max:
-        parseFloat(document.getElementById("cfg-rpm-max")?.value) || 5000,
+        parseFloat(document.getElementById("cfg-tolerancia-desvio")?.value) || 20,
+      rpm_min: parseFloat(document.getElementById("cfg-rpm-min")?.value) || 2000,
+      rpm_max: parseFloat(document.getElementById("cfg-rpm-max")?.value) || 5000,
       tolvas: parseInt(document.getElementById("cfg-qty-tolvas")?.value) || 2,
       velocidad_max: 8.5,
       alarma_tiempo_seg: 2,
     },
+    trenes: _estructuraTrenes || {},
     mapeo_sensores: workingMapeo,
     monitoreo: _leerConfigMonitoreo(),
   };
@@ -504,25 +993,25 @@ function cerrarModal() {
 // MONITOREO — Método de inicio configurable
 // ============================================================
 
-window._onMetodoInicioChange = function(val) {
-  const optsDiv = document.getElementById('cfg-monitoreo-sensores-opts');
-  if (optsDiv) optsDiv.style.display = val === 'sensores' ? '' : 'none';
+window._onMetodoInicioChange = function (val) {
+  const optsDiv = document.getElementById("cfg-monitoreo-sensores-opts");
+  if (optsDiv) optsDiv.style.display = val === "sensores" ? "" : "none";
 };
 
 function _cargarConfigMonitoreo() {
-  const metodo = APP_CONFIG?.monitoreo?.metodo_inicio || 'sensores';
+  const metodo = APP_CONFIG?.monitoreo?.metodo_inicio || "sensores";
   const umbral = APP_CONFIG?.monitoreo?.umbral_sensores_activos || 3;
   const tiempo = APP_CONFIG?.monitoreo?.tiempo_confirmacion_ms || 500;
 
-  const selMetodo = document.getElementById('cfg-metodo-inicio');
+  const selMetodo = document.getElementById("cfg-metodo-inicio");
   if (selMetodo) selMetodo.value = metodo;
 
-  const slUmbral = document.getElementById('cfg-umbral-sensores');
-  const lblUmbral = document.getElementById('cfg-umbral-val');
+  const slUmbral = document.getElementById("cfg-umbral-sensores");
+  const lblUmbral = document.getElementById("cfg-umbral-val");
   if (slUmbral) slUmbral.value = umbral;
   if (lblUmbral) lblUmbral.textContent = umbral;
 
-  const inpTiempo = document.getElementById('cfg-tiempo-confirmacion');
+  const inpTiempo = document.getElementById("cfg-tiempo-confirmacion");
   if (inpTiempo) inpTiempo.value = tiempo;
 
   _onMetodoInicioChange(metodo);
@@ -530,26 +1019,26 @@ function _cargarConfigMonitoreo() {
 
 function _leerConfigMonitoreo() {
   return {
-    metodo_inicio: document.getElementById('cfg-metodo-inicio')?.value || 'sensores',
-    umbral_sensores_activos: parseInt(document.getElementById('cfg-umbral-sensores')?.value) || 3,
-    tiempo_confirmacion_ms: parseInt(document.getElementById('cfg-tiempo-confirmacion')?.value) || 500
+    metodo_inicio: document.getElementById("cfg-metodo-inicio")?.value || "sensores",
+    umbral_sensores_activos:
+      parseInt(document.getElementById("cfg-umbral-sensores")?.value) || 3,
+    tiempo_confirmacion_ms:
+      parseInt(document.getElementById("cfg-tiempo-confirmacion")?.value) || 500,
   };
 }
 
-// Actualizar indicador de estado desde snapshot de CefSharp
-window._actualizarEstadoMonitoreo = function(monitoreoActivo) {
-  const led = document.getElementById('cfg-monitoreo-estado-led');
-  const txt = document.getElementById('cfg-monitoreo-estado-txt');
-  if (led) led.style.background = monitoreoActivo ? 'var(--accent)' : '#333';
-  if (led) led.style.borderColor = monitoreoActivo ? 'var(--accent)' : '#444';
-  if (txt) txt.textContent = monitoreoActivo ? 'MONITOREANDO' : 'Esperando inicio...';
-  if (txt) txt.style.color = monitoreoActivo ? 'var(--accent)' : '#888';
+window._actualizarEstadoMonitoreo = function (monitoreoActivo) {
+  const led = document.getElementById("cfg-monitoreo-estado-led");
+  const txt = document.getElementById("cfg-monitoreo-estado-txt");
+  if (led) led.style.background = monitoreoActivo ? "var(--accent)" : "#333";
+  if (led) led.style.borderColor = monitoreoActivo ? "var(--accent)" : "#444";
+  if (txt) txt.textContent = monitoreoActivo ? "MONITOREANDO" : "Esperando inicio...";
+  if (txt) txt.style.color = monitoreoActivo ? "var(--accent)" : "#888";
 
-  // Footer: indicador de estado
-  const footerLed = document.getElementById('monitoreo-estado-footer');
+  const footerLed = document.getElementById("monitoreo-estado-footer");
   if (footerLed) {
-    footerLed.style.background = monitoreoActivo ? 'var(--accent)' : '#333';
-    footerLed.title = monitoreoActivo ? 'Monitoreando' : 'Esperando inicio';
+    footerLed.style.background = monitoreoActivo ? "var(--accent)" : "#333";
+    footerLed.title = monitoreoActivo ? "Monitoreando" : "Esperando inicio";
   }
 };
 
@@ -562,8 +1051,7 @@ window.probarSonido = function (rutaSonido) {
 
 window.prepararNuevoNodo = function (nodoData) {
   if (typeof abrirModal === "function") abrirModal();
-  if (typeof guardarEstadoTablaActual === "function")
-    guardarEstadoTablaActual();
+  if (typeof guardarEstadoTablaActual === "function") guardarEstadoTablaActual();
   let existe = workingMapeo.some((s) => s.uid === nodoData.uid);
   if (!existe) {
     for (let i = 0; i < nodoData.capacidad_cables; i++) {
@@ -578,8 +1066,7 @@ window.prepararNuevoNodo = function (nodoData) {
     }
   }
   nodoActual = nodoData.uid;
-  if (typeof actualizarSelectNodos === "function")
-    actualizarSelectNodos(nodoActual);
+  if (typeof actualizarSelectNodos === "function") actualizarSelectNodos(nodoActual);
   if (typeof switchTab === "function") switchTab("perfiles");
   alert(`🚜 ¡Nodo ${nodoData.uid} detectado!\nAsigná cada cable y guardá.`);
 };

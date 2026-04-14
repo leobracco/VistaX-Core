@@ -98,7 +98,7 @@ app.get("/", (req, res) => {
 
   res.render("index", {
     config,
-    loteActivo: recorder.getLoteActivo() || null,
+    loteActivo: mqttHandler.client?.getLoteActual?.() || null,
   });
 });
 app.get("/detalle-surco", (req, res) => {

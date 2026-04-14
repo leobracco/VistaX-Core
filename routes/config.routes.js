@@ -259,4 +259,19 @@ router.post("/nodos/resync-cables", (req, res) => {
   res.json(resultado);
 });
 
+router.get("/maquinas/:id/trenes-estructura", (req, res) => {
+  const profile = profilesManager.getActiveProfile(req.params.id);
+  if (!profile) return res.status(404).json({ ok: false, error: "no_existe" });
+
+  const estructura = profilesManager.calcularRangosTrenes(profile);
+  if (!estructura) {
+    return res.json({ ok: true, definido: false, rangos: null, totalSurcos: 0 });
+  }
+
+  res.json({
+    ok: true,
+    definido: true,
+    ...estructura,
+  });
+});
 module.exports = router;

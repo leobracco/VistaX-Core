@@ -1,0 +1,2292 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "lote": "2026-04-13 19-17",
+    "generado": "2026-04-13T22:34:30.333Z",
+    "puntos": 68
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45125356166667
+        ]
+      },
+      "properties": {
+        "ts": 1776118977111,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45126705166667
+        ]
+      },
+      "properties": {
+        "ts": 1776118983020,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45128054166667
+        ]
+      },
+      "properties": {
+        "ts": 1776118988922,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45129428
+        ]
+      },
+      "properties": {
+        "ts": 1776118994930,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451588558333334
+        ]
+      },
+      "properties": {
+        "ts": 1776119123812,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451602048333335
+        ]
+      },
+      "properties": {
+        "ts": 1776119129731,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451615538333336
+        ]
+      },
+      "properties": {
+        "ts": 1776119135635,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451629028333336
+        ]
+      },
+      "properties": {
+        "ts": 1776119141547,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45164251833334
+        ]
+      },
+      "properties": {
+        "ts": 1776119147450,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45165600833333
+        ]
+      },
+      "properties": {
+        "ts": 1776119153348,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45166974666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119159369,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45168323666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119165273,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45169672666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119171193,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45171021666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119177097,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45172370666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119183011,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45173719666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119188935,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451750686666664
+        ]
+      },
+      "properties": {
+        "ts": 1776119194842,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451764176666664
+        ]
+      },
+      "properties": {
+        "ts": 1776119200748,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451777666666665
+        ]
+      },
+      "properties": {
+        "ts": 1776119206643,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451791405
+        ]
+      },
+      "properties": {
+        "ts": 1776119212660,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451804895
+        ]
+      },
+      "properties": {
+        "ts": 1776119218577,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0.66
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451818385
+        ]
+      },
+      "properties": {
+        "ts": 1776119224474,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0.69
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451831875
+        ]
+      },
+      "properties": {
+        "ts": 1776119230403,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451845365
+        ]
+      },
+      "properties": {
+        "ts": 1776119236324,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451858855
+        ]
+      },
+      "properties": {
+        "ts": 1776119242236,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451872345
+        ]
+      },
+      "properties": {
+        "ts": 1776119248164,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0.66
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451885835
+        ]
+      },
+      "properties": {
+        "ts": 1776119254076,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 2.08
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451899573333336
+        ]
+      },
+      "properties": {
+        "ts": 1776119260105,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.451913063333336
+        ]
+      },
+      "properties": {
+        "ts": 1776119266012,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45192655333334
+        ]
+      },
+      "properties": {
+        "ts": 1776119271917,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45194004333333
+        ]
+      },
+      "properties": {
+        "ts": 1776119277839,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45195353333333
+        ]
+      },
+      "properties": {
+        "ts": 1776119283739,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45196702333333
+        ]
+      },
+      "properties": {
+        "ts": 1776119289656,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45198051333333
+        ]
+      },
+      "properties": {
+        "ts": 1776119295555,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45199400333333
+        ]
+      },
+      "properties": {
+        "ts": 1776119301467,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45200749333333
+        ]
+      },
+      "properties": {
+        "ts": 1776119307365,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45202123166667
+        ]
+      },
+      "properties": {
+        "ts": 1776119313402,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452034721666664
+        ]
+      },
+      "properties": {
+        "ts": 1776119319310,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452048211666664
+        ]
+      },
+      "properties": {
+        "ts": 1776119325262,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452061701666665
+        ]
+      },
+      "properties": {
+        "ts": 1776119331164,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452075191666665
+        ]
+      },
+      "properties": {
+        "ts": 1776119337082,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452088681666666
+        ]
+      },
+      "properties": {
+        "ts": 1776119342992,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45210217166667
+        ]
+      },
+      "properties": {
+        "ts": 1776119348892,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45211566166667
+        ]
+      },
+      "properties": {
+        "ts": 1776119354821,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.4521294
+        ]
+      },
+      "properties": {
+        "ts": 1776119360829,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45214289
+        ]
+      },
+      "properties": {
+        "ts": 1776119366749,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45215638
+        ]
+      },
+      "properties": {
+        "ts": 1776119372657,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45216987
+        ]
+      },
+      "properties": {
+        "ts": 1776119378574,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45218336
+        ]
+      },
+      "properties": {
+        "ts": 1776119384505,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45219685
+        ]
+      },
+      "properties": {
+        "ts": 1776119390411,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45221034
+        ]
+      },
+      "properties": {
+        "ts": 1776119396318,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45222383
+        ]
+      },
+      "properties": {
+        "ts": 1776119402223,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45262153
+        ]
+      },
+      "properties": {
+        "ts": 1776119576604,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45263526833333
+        ]
+      },
+      "properties": {
+        "ts": 1776119582567,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 29.79
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45264875833333
+        ]
+      },
+      "properties": {
+        "ts": 1776119588471,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 167.33
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0.66
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45266224833333
+        ]
+      },
+      "properties": {
+        "ts": 1776119594384,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 171.31
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 13.94
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45267573833333
+        ]
+      },
+      "properties": {
+        "ts": 1776119600291,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 61.67
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452689228333334
+        ]
+      },
+      "properties": {
+        "ts": 1776119606188,
+        "vel": 0.9,
+        "bajadas": {
+          "8": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "9": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "10": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "11": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "12": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "13": {
+            "tipo": "semilla",
+            "spm": 0
+          },
+          "14": {
+            "tipo": "semilla",
+            "spm": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452702718333335
+        ]
+      },
+      "properties": {
+        "ts": 1776119612095,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452716208333335
+        ]
+      },
+      "properties": {
+        "ts": 1776119617999,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452729698333336
+        ]
+      },
+      "properties": {
+        "ts": 1776119623921,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452743188333336
+        ]
+      },
+      "properties": {
+        "ts": 1776119629847,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.452756926666666
+        ]
+      },
+      "properties": {
+        "ts": 1776119635901,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45277041666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119641796,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45278390666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119647705,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45279739666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119653616,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45281088666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119659543,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -111.160047,
+          53.45282437666667
+        ]
+      },
+      "properties": {
+        "ts": 1776119665437,
+        "vel": 0.9,
+        "bajadas": {}
+      }
+    }
+  ]
+}

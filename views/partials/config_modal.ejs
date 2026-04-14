@@ -24,6 +24,9 @@
             <button class="tab-btn" onclick="switchTab('general')">
               <i class="fas fa-sliders-h"></i> <span>General</span>
             </button>
+            <button class="tab-btn" onclick="switchTab('trenes')">
+              <i class="fas fa-train"></i> <span>Trenes</span>
+            </button>
             <button class="tab-btn" onclick="switchTab('sensores')">
               <i class="fas fa-microchip"></i> <span>Sensores</span>
             </button>
@@ -107,7 +110,31 @@
             </div>
             <div class="card-grid" id="cfg-objetivos-trenes"></div>
           </div>
+          <div id="tab-trenes" class="tab-content" style="display: none">
+  <div class="section-header">
+    <h3>Estructura de Trenes</h3>
+    <p>Definí cuántos trenes tiene tu sembradora y cuántos surcos por tren. La numeración se calcula automáticamente.</p>
+  </div>
 
+  <div style="display: flex; gap: 20px; margin-bottom: 20px">
+    <div class="input-card" style="flex: 0 0 200px">
+      <label>Cantidad de Trenes</label>
+      <input type="number" id="cfg-qty-trenes" min="1" max="6" value="2" onchange="_onCantTrenesChange()">
+    </div>
+  </div>
+
+  <div id="cfg-trenes-lista" style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+    <!-- Se genera dinámicamente con JS -->
+  </div>
+
+  <div id="cfg-trenes-preview" class="help-text" style="margin-top: 20px; padding: 12px; background: #1a1a1a; border-left: 3px solid var(--accent); border-radius: 4px;">
+    <!-- Preview calculado en vivo -->
+  </div>
+
+  <div id="cfg-trenes-warning" style="display: none; margin-top: 12px; padding: 12px; background: #2a1a00; border-left: 3px solid #ffa500; border-radius: 4px; color: #ffa500;">
+    <!-- Advertencias de inconsistencia con el mapeo actual -->
+  </div>
+</div>
           <!-- ═══ TAB SENSORES ═══ -->
           <div id="tab-sensores" class="tab-content" style="display:none">
             <div class="table-header-actions" style="flex-wrap:wrap; gap:15px">
@@ -118,6 +145,9 @@
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                   <select id="select-nodo-filter" class="config-select-main" onchange="cambiarNodo()"></select>
                   <button class="btn-cancel" style="padding:8px 15px" onclick="agregarNuevoNodo()">+ NODO</button>
+                  <button class="btn-cancel" style="padding: 8px 15px" onclick="actualizarSelectNodos(nodoActual)" title="Recargar lista de nodos">
+  <i class="fas fa-sync"></i>
+</button>
                   <button
                     id="btn-abrir-ota"
                     onclick="abrirModalOTA()"

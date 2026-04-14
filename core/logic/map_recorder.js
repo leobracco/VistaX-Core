@@ -1,400 +1,395 @@
 // ============================================================
-// VistaX - map_recorder.js
-// Graba puntos GPS + densidad de siembra en tiempo real.
-// Genera un GeoJSON de pasadas (LineString) y otro de puntos
-// (Point) con spm por bajada. Ambos se sirven por REST y
-// se emiten por Socket.IO para el mapa en vivo.
+// core/logic/map_recorder.js  — VistaX v2.2.0
+//
+// Graba puntos de densidad de siembra georreferenciados.
+// Persiste en data/mapas/{slug}.geojson y exporta a KML.
+//
+// CICLO DE VIDA:
+//   aog/field/status  accion="abierto"|"nuevo"|"continuar"  → inicia/reanuda
+//   aog/field/status  accion="cerrado"                      → pausa (no borra)
+//   Si el mismo lote se reabre, carga los puntos existentes y sigue.
+//
+// INTEGRACIÓN:
+//   En mqtt_handler.js:
+//     const mapRecorder = require("./map_recorder");
+//     (dentro de client.on("connect"))  → mapRecorder.iniciar(client, io);
+//     (después de io.emit("sensor_update")) → mapRecorder.onSensorData(bajada, tipo, spm);
+//
+// RUTAS API (agregar en server.js):
+//   GET /api/mapa/estado
+//   GET /api/mapa/exportar/geojson
+//   GET /api/mapa/exportar/kml
 // ============================================================
 
-const fs = require("fs");
+"use strict";
+
+const fs   = require("fs");
 const path = require("path");
 
-// ------ Configuración ----------------------------------------
-const LOTES_DIR = path.join(__dirname, "../../data/lotes");
-const INTERVAL_MS = 500; // cada cuántos ms consolida un punto
-const MIN_DIST_M = 0.8; // distancia mínima entre puntos guardados (evita duplicados en parado)
-const ANCHO_PASADA_M = 0.191; // se sobreescribe con config.setup.distancia_entre_surcos al iniciar lote
+// ─── Configuración ────────────────────────────────────────
+const DATA_DIR        = path.join(__dirname, "../../data/mapas");
+const MIN_VEL_KMH     = 0.5;   // Velocidad mínima para grabar
+const MIN_DIST_M      = 1.5;   // Distancia mínima entre puntos (metros)
+const SAVE_CADA_N     = 10;    // Guardar GeoJSON cada N puntos nuevos
 
-if (!fs.existsSync(LOTES_DIR)) fs.mkdirSync(LOTES_DIR, { recursive: true });
+// ─── Estado interno ───────────────────────────────────────
+let _iniciado     = false;
+let _mqttClient   = null;
+let _io           = null;
 
-// ------ Estado interno ----------------------------------------
-let loteActivo = null; // { id, nombre, cultivo, startTs, filePath, anchoPasada }
-let ultimaPosGPS = null; // { lat, lon }
-let estadoSensores = {}; // { bajada: { spm: float, alerta: bool } } – se actualiza desde mqtt_handler
+let _loteActivo   = "";         // Nombre legible del lote
+let _loteSlug     = "";         // Versión slugificada para el nombre de archivo
+let _grabando     = false;
 
-// Buffer en memoria para el lote activo
-// puntos: [{ lat, lon, heading, vel, ts, surcos: { "1": spm, "2": spm, ... }, alerta: bool }]
-let bufferPuntos = [];
+let _posicion     = { lat: 0, lon: 0 };
+let _ultimaPos    = { lat: 0, lon: 0 };
+let _velocidad    = 0;
 
-// ============================================================
-// API pública
-// ============================================================
+let _sensoresAcum = {};         // { bajada: { tipo, sumaSpm, n } } — se resetea por punto
+let _features     = [];         // GeoJSON features acumuladas en memoria
+
+// Asegurar directorio de datos
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// ─────────────────────────────────────────────────────────
+// API PÚBLICA
+// ─────────────────────────────────────────────────────────
 
 /**
- * Inicia un nuevo lote de siembra.
- * @param {string} nombre   - Nombre del lote (ej: "Lote Norte 2025")
- * @param {string} cultivo  - Cultivo (ej: "Soja", "Maiz")
- * @param {number} anchoPasada - Distancia entre surcos en metros
+ * Inicializar el módulo. Llamar UNA SOLA VEZ desde mqtt_handler.js
+ * dentro del bloque client.on("connect", ...).
  */
-function iniciarLote(nombre, cultivo, anchoPasada = ANCHO_PASADA_M, meta = {}) {
-  const ts = Date.now();
-  const id = `lote_${ts}`;
+function iniciar(mqttClient, io) {
+  if (_iniciado) return;
+  _iniciado   = true;
+  _mqttClient = mqttClient;
+  _io         = io;
 
-  loteActivo = {
-    id,
-    nombre,
-    cultivo,
-    variedad:   meta.variedad  || "",
-    estab:      meta.estab     || "",
-    inicio:     new Date(ts).toISOString(),
-    startTs:    ts,
-    anchoPasada: parseFloat(anchoPasada) || ANCHO_PASADA_M,
-    filePath:   path.join(LOTES_DIR, `${id}.json`),
+  // Suscribir a los topics necesarios
+  mqttClient.subscribe("aog/field/status");
+  mqttClient.subscribe("aog/machine/position");
+  mqttClient.subscribe("aog/machine/speed");
+
+  // Listener propio — coexiste con el de mqtt_handler.js
+  mqttClient.on("message", _onMqttMessage);
+
+  console.log("[MapRecorder v2.2] Inicializado. Esperando lote activo...");
+}
+
+/**
+ * Llamar desde mqtt_handler.js cada vez que se procesa un sensor.
+ * Acumula las lecturas hasta que llega la próxima posición GPS.
+ */
+function onSensorData(bajada, tipo, spm) {
+  if (!_grabando) return;
+
+  const key = String(bajada);
+  if (!_sensoresAcum[key]) {
+    _sensoresAcum[key] = { tipo, sumaSpm: 0, n: 0 };
+  }
+  _sensoresAcum[key].sumaSpm += parseFloat(spm) || 0;
+  _sensoresAcum[key].n       += 1;
+}
+
+/**
+ * Exporta KML del lote activo. Retorna la ruta del archivo o null.
+ */
+function exportarKML() {
+  if (!_loteSlug || _features.length === 0) return null;
+  return _generarKML();
+}
+
+/**
+ * Retorna el estado actual del grabador (para la API y Socket.IO).
+ */
+function getEstado() {
+  return {
+    grabando:    _grabando,
+    lote:        _loteActivo,
+    puntos:      _features.length,
+    geoJsonPath: _loteSlug ? _rutaGeoJSON() : null,
   };
-
-  bufferPuntos = [];
-  ultimaPosGPS = null;
-  estadoSensores = {};
-
-  // Escribimos el header del archivo de lote
-  _persistirLote();
-
-  console.log(`\x1b[32m[MapRecorder]\x1b[0m Lote iniciado: ${nombre} (${id})`);
-  return loteActivo;
 }
 
 /**
- * Cierra el lote activo y genera el GeoJSON final.
- * Retorna la ruta del archivo GeoJSON exportado.
+ * Retorna el array de features en memoria (para la ruta API /geojson).
  */
-function cerrarLote() {
-  if (!loteActivo) return null;
-
-  loteActivo.endTs = Date.now();
-  loteActivo.duracionMin = Math.round(
-    (loteActivo.endTs - loteActivo.startTs) / 60000,
-  );
-
-  // Calcular estadísticas finales
-  loteActivo.estadisticas = _calcularEstadisticas();
-
-  _persistirLote();
-
-  // Exportar GeoJSON
-  const geojsonPath = _exportarGeoJSON();
-
-  console.log(
-    `\x1b[33m[MapRecorder]\x1b[0m Lote cerrado: ${loteActivo.nombre}`,
-  );
-  console.log(`\x1b[33m[MapRecorder]\x1b[0m GeoJSON exportado: ${geojsonPath}`);
-
-  const loteTerminado = { ...loteActivo };
-  loteActivo = null;
-  bufferPuntos = [];
-  ultimaPosGPS = null;
-
-  return { lote: loteTerminado, geojsonPath };
+function getFeatures() {
+  return _features;
 }
 
-/**
- * Actualiza la posición GPS y la velocidad desde el bridge.
- * Se llama desde mqtt_handler cuando llega aog/machine/position.
- */
-function actualizarGPS(lat, lon, heading, velocidad) {
-  if (!loteActivo) return;
+// ─────────────────────────────────────────────────────────
+// MANEJO DE MENSAJES MQTT
+// ─────────────────────────────────────────────────────────
 
-  // Filtro de distancia mínima: no guardamos si la máquina está casi parada
-  if (ultimaPosGPS) {
-    const dist = _distanciaMetros(ultimaPosGPS.lat, ultimaPosGPS.lon, lat, lon);
-    if (dist < MIN_DIST_M) return;
+function _onMqttMessage(topic, message) {
+  try {
+    const raw = message.toString();
+
+    // ── Velocidad ──────────────────────────────────────
+    if (topic === "aog/machine/speed") {
+      _velocidad = parseFloat(raw) || 0;
+      return;
+    }
+
+    // ── Posición GPS ───────────────────────────────────
+    if (topic === "aog/machine/position") {
+      const data = JSON.parse(raw);
+      if (data.lat && data.lon) {
+        _posicion = { lat: data.lat, lon: data.lon };
+        _intentarGrabarPunto();
+      }
+      return;
+    }
+
+    // ── Estado del lote ────────────────────────────────
+    if (topic === "aog/field/status") {
+      const data = JSON.parse(raw);
+      _manejarCambioLote(data);
+      return;
+    }
+
+  } catch (_err) {
+    // JSON parcial o mensaje inválido — ignorar silenciosamente
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// CICLO DE VIDA DEL LOTE
+// ─────────────────────────────────────────────────────────
+
+function _manejarCambioLote(data) {
+  const { fieldName, accion } = data;
+
+  // ── Lote cerrado: pausamos pero NO destruimos datos ──
+  if (accion === "cerrado") {
+    if (_grabando) {
+      _guardarGeoJSON();
+      _grabando = false;
+      console.log(`[MapRecorder] ■ Lote pausado: "${_loteActivo}" (${_features.length} pts guardados)`);
+      _emitirEstado();
+    }
+    return;
   }
 
-  ultimaPosGPS = { lat, lon };
+  // ── Lote abierto/nuevo/continuar ─────────────────────
+  if (["nuevo", "abierto", "continuar"].includes(accion) && fieldName) {
+    const slug = _slugify(fieldName);
 
-  // Construir snapshot del momento
-  const surcos = {};
-  let hayAlerta = false;
+    // Si es el mismo lote y ya estamos grabando → no hacer nada
+    if (slug === _loteSlug && _grabando) return;
 
-  Object.entries(estadoSensores).forEach(([bajada, s]) => {
-    surcos[bajada] = parseFloat(s.spm) || 0;
-    if (s.alerta) hayAlerta = true;
-  });
+    _loteActivo   = fieldName;
+    _loteSlug     = slug;
+    _sensoresAcum = {};
 
-  const punto = {
-    lat,
-    lon,
-    heading: heading || 0,
-    vel: velocidad || 0,
-    ts: Date.now(),
-    surcos,
-    alerta: hayAlerta,
-    spmPromedio: _spmPromedio(surcos),
-  };
+    // Intentar cargar datos previos del mismo lote
+    const geoPath = _rutaGeoJSON();
+    if (fs.existsSync(geoPath)) {
+      try {
+        const previo = JSON.parse(fs.readFileSync(geoPath, "utf8"));
+        _features = Array.isArray(previo.features) ? previo.features : [];
+        console.log(`[MapRecorder] ▶ Reanudando lote "${fieldName}" — ${_features.length} puntos previos cargados`);
+      } catch (_err) {
+        _features = [];
+        console.log(`[MapRecorder] ⚠️ GeoJSON corrupto — empezando desde cero para "${fieldName}"`);
+      }
+    } else {
+      _features = [];
+      console.log(`[MapRecorder] ▶ Nuevo lote iniciado: "${fieldName}"`);
+    }
 
-  bufferPuntos.push(punto);
-
-  // Persistencia incremental cada 20 puntos para no golpear el disco en cada ciclo
-  if (bufferPuntos.length % 20 === 0) _persistirLote();
-
-  return punto;
+    _grabando    = true;
+    _ultimaPos   = { lat: 0, lon: 0 }; // Forzar primer punto inmediatamente
+    _emitirEstado();
+  }
 }
 
-/**
- * Recibe el update de un sensor desde mqtt_handler.
- * Se llama en el mismo lugar donde se hace io.emit("sensor_update", ...).
- */
-function actualizarSensor(bajada, spm, alerta) {
-  estadoSensores[bajada] = { spm: parseFloat(spm) || 0, alerta: !!alerta };
-}
+// ─────────────────────────────────────────────────────────
+// GRABACIÓN DE PUNTO
+// ─────────────────────────────────────────────────────────
 
-// ============================================================
-// GeoJSON en memoria para el mapa en vivo
-// ============================================================
+function _intentarGrabarPunto() {
+  if (!_grabando)              return;
+  if (_velocidad < MIN_VEL_KMH) return;
+  if (_posicion.lat === 0)     return;
 
-/**
- * Devuelve el GeoJSON de puntos del lote activo (para el mapa en vivo).
- * Cada feature tiene: spmPromedio, alerta, vel, ts, surcos.
- */
-function getGeoJSONLive() {
-  if (!bufferPuntos.length) {
-    return { type: "FeatureCollection", features: [] };
+  // Filtro de distancia mínima entre puntos
+  const dist = _distanciaMetros(_ultimaPos, _posicion);
+  if (dist < MIN_DIST_M && _features.length > 0) return;
+
+  // Construir propiedades de densidad por bajada
+  const bajadas = {};
+  for (const [b, v] of Object.entries(_sensoresAcum)) {
+    bajadas[b] = {
+      tipo: v.tipo,
+      spm:  v.n > 0 ? parseFloat((v.sumaSpm / v.n).toFixed(2)) : 0,
+    };
   }
 
-  const features = bufferPuntos.map((p) => ({
+  const feature = {
     type: "Feature",
     geometry: {
-      type: "Point",
-      coordinates: [p.lon, p.lat], // GeoJSON: [lon, lat]
+      type:        "Point",
+      coordinates: [_posicion.lon, _posicion.lat],
     },
     properties: {
-      ts: p.ts,
-      vel: p.vel,
-      heading: p.heading,
-      spmPromedio: p.spmPromedio,
-      alerta: p.alerta,
-      surcos: p.surcos,
+      ts:     Date.now(),
+      vel:    parseFloat(_velocidad.toFixed(1)),
+      bajadas,
     },
-  }));
-
-  return { type: "FeatureCollection", features };
-}
-
-/**
- * Devuelve el GeoJSON de pasadas (LineString por franja de ancho de pasada).
- * Útil para ver las franjas pintadas como en un monitor de secciones.
- */
-function getGeoJSONPasadas() {
-  if (bufferPuntos.length < 2) {
-    return { type: "FeatureCollection", features: [] };
-  }
-
-  // Agrupar puntos en "pasadas" (segmentos continuos sin saltos >10m)
-  const pasadas = [];
-  let pasadaActual = [bufferPuntos[0]];
-
-  for (let i = 1; i < bufferPuntos.length; i++) {
-    const prev = bufferPuntos[i - 1];
-    const curr = bufferPuntos[i];
-    const dist = _distanciaMetros(prev.lat, prev.lon, curr.lat, curr.lon);
-
-    if (dist > 10) {
-      // Salto grande: nueva pasada
-      pasadas.push([...pasadaActual]);
-      pasadaActual = [curr];
-    } else {
-      pasadaActual.push(curr);
-    }
-  }
-  if (pasadaActual.length > 0) pasadas.push(pasadaActual);
-
-  const features = pasadas
-    .filter((p) => p.length >= 2)
-    .map((puntos, idx) => {
-      const spmProm =
-        puntos.reduce((a, p) => a + p.spmPromedio, 0) / puntos.length;
-      const alertas = puntos.filter((p) => p.alerta).length;
-
-      return {
-        type: "Feature",
-        geometry: {
-          type: "LineString",
-          coordinates: puntos.map((p) => [p.lon, p.lat]),
-        },
-        properties: {
-          pasadaId: idx,
-          spmPromedio: parseFloat(spmProm.toFixed(1)),
-          alertas,
-          puntos: puntos.length,
-          anchoPasada: loteActivo?.anchoPasada || ANCHO_PASADA_M,
-        },
-      };
-    });
-
-  return { type: "FeatureCollection", features };
-}
-
-/**
- * Devuelve info del lote activo (para el footer de la UI).
- */
-function getLoteActivo() {
-  if (!loteActivo) return null;
-  return {
-    ...loteActivo,
-    puntosGrabados: bufferPuntos.length,
-    estadisticasLive: _calcularEstadisticas(),
   };
+
+  _features.push(feature);
+  _sensoresAcum = {};                            // Reset acumulador de sensores
+  _ultimaPos    = { ..._posicion };
+
+  // Guardado periódico para no saturar el disco
+  if (_features.length % SAVE_CADA_N === 0) {
+    _guardarGeoJSON();
+    _emitirEstado();
+  }
 }
 
-/**
- * Lista los lotes guardados en disco.
- */
-function listarLotes() {
-  return fs
-    .readdirSync(LOTES_DIR)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => {
-      try {
-        const data = JSON.parse(
-          fs.readFileSync(path.join(LOTES_DIR, f), "utf8"),
-        );
-        return {
-          id: data.id,
-          nombre: data.nombre,
-          cultivo: data.cultivo,
-          startTs: data.startTs,
-          endTs: data.endTs,
-          puntos: data.puntos?.length || 0,
-          estadisticas: data.estadisticas || {},
-        };
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.startTs - a.startTs);
-}
+// ─────────────────────────────────────────────────────────
+// PERSISTENCIA — GeoJSON
+// ─────────────────────────────────────────────────────────
 
-/**
- * Carga el GeoJSON de un lote cerrado desde disco.
- */
-function cargarGeoJSONLote(loteId) {
-  const geojsonPath = path.join(LOTES_DIR, `${loteId}.geojson`);
-  if (!fs.existsSync(geojsonPath)) return null;
-  return JSON.parse(fs.readFileSync(geojsonPath, "utf8"));
-}
-
-// ============================================================
-// Funciones privadas
-// ============================================================
-
-function _persistirLote() {
-  if (!loteActivo) return;
-  const data = { ...loteActivo, puntos: bufferPuntos };
-  fs.writeFileSync(loteActivo.filePath, JSON.stringify(data), "utf8");
-}
-
-function _exportarGeoJSON() {
-  if (!loteActivo) return null;
+function _guardarGeoJSON() {
+  if (!_loteSlug) return;
 
   const geojson = {
     type: "FeatureCollection",
-    name: loteActivo.nombre,
-    crs: {
-      type: "name",
-      properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" },
-    },
     metadata: {
-      loteId: loteActivo.id,
-      nombre: loteActivo.nombre,
-      cultivo: loteActivo.cultivo,
-      startTs: loteActivo.startTs,
-      endTs: loteActivo.endTs,
-      estadisticas: loteActivo.estadisticas,
+      lote:      _loteActivo,
+      generado:  new Date().toISOString(),
+      puntos:    _features.length,
     },
-    features: bufferPuntos.map((p) => ({
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: [p.lon, p.lat],
-      },
-      properties: {
-        ts: p.ts,
-        vel: p.vel,
-        spmPromedio: p.spmPromedio,
-        alerta: p.alerta,
-        ...p.surcos, // spm de cada bajada como propiedad directa → compatible con QGIS
-      },
-    })),
+    features: _features,
   };
 
-  const geojsonPath = path.join(LOTES_DIR, `${loteActivo.id}.geojson`);
-  fs.writeFileSync(geojsonPath, JSON.stringify(geojson, null, 2), "utf8");
-  return geojsonPath;
+  try {
+    fs.writeFileSync(_rutaGeoJSON(), JSON.stringify(geojson, null, 2), "utf8");
+  } catch (err) {
+    console.error("[MapRecorder] ❌ Error guardando GeoJSON:", err.message);
+  }
 }
 
-function _calcularEstadisticas() {
-  if (!bufferPuntos.length) return {};
+// ─────────────────────────────────────────────────────────
+// EXPORTACIÓN — KML
+// ─────────────────────────────────────────────────────────
 
-  const spms = bufferPuntos.map((p) => p.spmPromedio).filter((v) => v > 0);
-  const alertasTotal = bufferPuntos.filter((p) => p.alerta).length;
-  const distanciaM = bufferPuntos.reduce((acc, p, i) => {
-    if (i === 0) return 0;
-    return (
-      acc +
-      _distanciaMetros(
-        bufferPuntos[i - 1].lat,
-        bufferPuntos[i - 1].lon,
-        p.lat,
-        p.lon,
-      )
-    );
-  }, 0);
+function _generarKML() {
+  const placemarks = _features.map((f, i) => {
+    const [lon, lat] = f.geometry.coordinates;
+    const p          = f.properties;
 
-  return {
-    puntosGrabados: bufferPuntos.length,
-    spmPromedio: spms.length
-      ? parseFloat((spms.reduce((a, b) => a + b, 0) / spms.length).toFixed(1))
-      : 0,
-    spmMax: spms.length ? parseFloat(Math.max(...spms).toFixed(1)) : 0,
-    spmMin: spms.length ? parseFloat(Math.min(...spms).toFixed(1)) : 0,
-    alertasRegistradas: alertasTotal,
-    distanciaRecorridaM: parseFloat(distanciaM.toFixed(0)),
-    hectareasAprox: parseFloat(
-      (
-        (distanciaM * (loteActivo?.anchoPasada || ANCHO_PASADA_M)) /
-        10000
-      ).toFixed(2),
-    ),
-  };
+    // Calcular promedio de densidad para el color del punto
+    const valores = Object.values(p.bajadas || {})
+      .filter(v => v.tipo === "semilla")
+      .map(v => v.spm);
+    const promSpm = valores.length
+      ? (valores.reduce((a, b) => a + b, 0) / valores.length).toFixed(1)
+      : "N/A";
+
+    const descLineas = Object.entries(p.bajadas || {})
+      .map(([b, v]) => `Bajada ${b} (${v.tipo}): ${v.spm} s/m`)
+      .join("&#10;");
+
+    const styleUrl = _spmAColorKML(parseFloat(promSpm));
+
+    return `    <Placemark>
+      <name>P${i + 1}</name>
+      <styleUrl>${styleUrl}</styleUrl>
+      <description>Vel: ${p.vel} km/h&#10;Prom: ${promSpm} s/m&#10;${descLineas}</description>
+      <Point><coordinates>${lon},${lat},0</coordinates></Point>
+    </Placemark>`;
+  }).join("\n");
+
+  // Estilos de color por rango de densidad
+  const estilos = `
+    <Style id="bajo"><IconStyle><color>ff0000ff</color><scale>0.6</scale></IconStyle></Style>
+    <Style id="normal"><IconStyle><color>ff00ff00</color><scale>0.6</scale></IconStyle></Style>
+    <Style id="alto"><IconStyle><color>ff0080ff</color><scale>0.6</scale></IconStyle></Style>
+    <Style id="sinDatos"><IconStyle><color>ff888888</color><scale>0.4</scale></IconStyle></Style>`;
+
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${_loteActivo}</name>
+    <description>Mapa de siembra VistaX — ${_features.length} puntos — ${new Date().toLocaleString("es-AR")}</description>
+${estilos}
+${placemarks}
+  </Document>
+</kml>`;
+
+  const kmlPath = path.join(DATA_DIR, `${_loteSlug}.kml`);
+  try {
+    fs.writeFileSync(kmlPath, kml, "utf8");
+    console.log(`[MapRecorder] ✅ KML exportado: ${kmlPath}`);
+    return kmlPath;
+  } catch (err) {
+    console.error("[MapRecorder] ❌ Error exportando KML:", err.message);
+    return null;
+  }
 }
 
-function _spmPromedio(surcos) {
-  const vals = Object.values(surcos).filter((v) => v > 0);
-  if (!vals.length) return 0;
-  return parseFloat((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1));
+/**
+ * Retorna el styleUrl según densidad (semillas/metro).
+ * Ajustar umbrales según densidad_objetivo de la configuración.
+ */
+function _spmAColorKML(spm) {
+  if (isNaN(spm))  return "#sinDatos";
+  if (spm <= 0)    return "#sinDatos";
+  if (spm < 70)    return "#bajo";    // Rojo: bajo flujo
+  if (spm <= 105)  return "#normal";  // Verde: normal
+  return "#alto";                      // Naranja: sobre flujo
 }
 
-function _distanciaMetros(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
+// ─────────────────────────────────────────────────────────
+// UTILIDADES
+// ─────────────────────────────────────────────────────────
+
+function _rutaGeoJSON() {
+  return path.join(DATA_DIR, `${_loteSlug}.geojson`);
+}
+
+function _slugify(name) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")   // Quitar tildes
+    .replace(/[^a-zA-Z0-9\-_]/g, "_") // Reemplazar caracteres especiales
+    .replace(/_+/g, "_")               // Colapsar underscores múltiples
+    .replace(/^_|_$/g, "")            // Quitar underscores extremos
+    .toLowerCase()
+    .substring(0, 80);                 // Límite de longitud
+}
+
+/**
+ * Distancia entre dos puntos GPS en metros (Haversine).
+ */
+function _distanciaMetros(a, b) {
+  if (!a.lat || !b.lat) return 9999;
+  const R    = 6371000;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLon = ((b.lon - a.lon) * Math.PI) / 180;
+  const s =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    Math.cos((a.lat * Math.PI) / 180) *
+    Math.cos((b.lat * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
-// ============================================================
-module.exports = {
-  iniciarLote,
-  cerrarLote,
-  actualizarGPS,
-  actualizarSensor,
-  getGeoJSONLive,
-  getGeoJSONPasadas,
-  getLoteActivo,
-  listarLotes,
-  cargarGeoJSONLote,
-};
+function _emitirEstado() {
+  _io?.emit("map_recorder_status", {
+    grabando: _grabando,
+    lote:     _loteActivo,
+    puntos:   _features.length,
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+module.exports = { iniciar, onSensorData, exportarKML, getEstado, getFeatures };

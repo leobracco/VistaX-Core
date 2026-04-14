@@ -39,7 +39,7 @@ const listProfilesDetailed = () => {
         // Contar surcos de siembra (semilla + ferti)
         const sensores = data.mapeo_sensores || [];
         const surcos = sensores.filter(
-          (s) => s.is_active !== false && 
+          (s) => s.is_active !== false &&
           (s.tipo === "semilla" || s.tipo === "ferti_linea" || s.tipo === "ferti_costado")
         ).length;
 
@@ -151,11 +151,79 @@ const createEmptyProfile = (nombre) => {
       velocidad_max: 8.5,
       alarma_tiempo_seg: 2,
     },
+    trenes: {},        // estructura vacía, el usuario la define en el tab Trenes
     mapeo_sensores: [],
   };
 
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
   return id;
+};
+
+// ═══════════════════════════════════════════════════════════
+// ESTRUCTURA DE TRENES
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Calcula los rangos numéricos (inicio-fin) de cada tren del perfil.
+ * Los trenes se ordenan por el campo `orden` ascendente. El primero
+ * arranca en el surco 1, los siguientes continúan donde termina el anterior.
+ *
+ * Retorna null si el perfil no tiene estructura de trenes definida.
+ *
+ * Ejemplo de entrada:
+ *   perfil.trenes = {
+ *     "2": { surcos: 20, orden: 1, nombre: "Trasero" },
+ *     "1": { surcos: 19, orden: 2, nombre: "Delantero" }
+ *   }
+ *
+ * Salida:
+ *   {
+ *     rangos: {
+ *       "2": { inicio: 1,  fin: 20, surcos: 20, orden: 1, nombre: "Trasero"  },
+ *       "1": { inicio: 21, fin: 39, surcos: 19, orden: 2, nombre: "Delantero" }
+ *     },
+ *     totalSurcos: 39
+ *   }
+ */
+const calcularRangosTrenes = (perfil) => {
+  if (!perfil?.trenes || typeof perfil.trenes !== "object") return null;
+
+  const claves = Object.keys(perfil.trenes);
+  if (claves.length === 0) return null;
+
+  // Normalizar y ordenar por el campo 'orden'
+  const trenesArray = claves
+    .map((id) => {
+      const cfg = perfil.trenes[id] || {};
+      return {
+        id: String(id),
+        surcos: parseInt(cfg.surcos) || 0,
+        orden: parseInt(cfg.orden) || 99,
+        nombre: cfg.nombre || `Tren ${id}`,
+      };
+    })
+    .filter((t) => t.surcos > 0)
+    .sort((a, b) => a.orden - b.orden);
+
+  if (trenesArray.length === 0) return null;
+
+  const rangos = {};
+  let siguiente = 1;
+  trenesArray.forEach((t) => {
+    rangos[t.id] = {
+      inicio: siguiente,
+      fin: siguiente + t.surcos - 1,
+      surcos: t.surcos,
+      orden: t.orden,
+      nombre: t.nombre,
+    };
+    siguiente += t.surcos;
+  });
+
+  return {
+    rangos,
+    totalSurcos: siguiente - 1,
+  };
 };
 
 // ── Memoria: último perfil usado ──
@@ -192,6 +260,7 @@ module.exports = {
   deleteProfile,
   toggleLockProfile,
   createEmptyProfile,
+  calcularRangosTrenes,
   getLastProfileName,
   setLastProfileName,
 };
