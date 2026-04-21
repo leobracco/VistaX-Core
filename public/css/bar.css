@@ -1,117 +1,622 @@
 /* ============================================================
-   VistaX — bar.css
-   Estilos para la vista barra (695×150 — VistaXShell)
+   VistaX — bar.css  (v3.0 — Agro Parallel theme)
+   Vista barra 695×150 — WPF + WebView2
+   Cambios vs v2:
+     - Paleta Agro Parallel (navy + verde lima #84cc16)
+     - Header 24px con branding
+     - Tubos 13px + gap 0 (más aire, mismo overflow scroll)
+     - KPIs con icono Font Awesome
+     - Verde brillante #00e676 preservado solo en tubos activos
+       (para visibilidad a distancia en cabina)
    ============================================================ */
 
-* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --ap-bg: #0f1620;
+  /* fondo principal */
+  --ap-bg-2: #1a2332;
+  /* paneles laterales */
+  --ap-bg-3: #243144;
+  /* surfaces */
+  --ap-border: #2d3a4f;
+  /* bordes */
+  --ap-border-2: #1f2a3a;
+  /* bordes sutiles */
+  --ap-text: #e8eef5;
+  --ap-text-muted: #8a9bb0;
+  --ap-text-dim: #5d6e84;
 
-html, body {
-  height:100%; width:100%; overflow:hidden;
-  background:#000; font-family:'Segoe UI',sans-serif; color:#fff;
+  --ap-green: #84cc16;
+  /* verde Agro Parallel (header, labels) */
+  --ap-green-hi: #00e676;
+  /* verde brillante (tubos activos, mayor visibilidad en cabina) */
+  --ap-red: #ef4444;
+  --ap-red-hi: #ff1744;
+  --ap-yellow: #ffb300;
+  --ap-blue: #42a5f5;
+  --ap-orange: #ff8c00;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--ap-bg);
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+  color: var(--ap-text);
 }
 
 .app {
-  display:flex; flex-direction:column;
-  height:100vh; width:100vw; overflow:hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
-/* ── Barra título mínima ── */
+/* ──────────────────────────────────────────────────────────
+   HEADER (24px)
+   ────────────────────────────────────────────────────────── */
 .titlebar {
-  height:16px; flex-shrink:0; display:flex; align-items:center;
-  background:#050505; border-bottom:1px solid #111;
-  padding:0; overflow:hidden;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: var(--ap-bg-2);
+  border-bottom: 1px solid var(--ap-border);
+  padding: 0;
+  overflow: hidden;
 }
 
 .drag {
-  flex:1; display:flex; align-items:center; gap:4px;
-  padding:0 8px; height:100%; cursor:move;
-  -webkit-app-region:drag;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  height: 100%;
+  cursor: move;
+  -webkit-app-region: drag;
 }
-.drag .brand { font-size:9px; font-weight:900; color:#00e676; }
-.drag .st    { font-size:7px; color:#333; }
 
+.drag .brand {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: var(--ap-text);
+}
+
+.drag .brand .accent {
+  color: var(--ap-green);
+}
+
+.drag .st {
+  font-size: 9px;
+  color: var(--ap-text-dim);
+  letter-spacing: 0.3px;
+}
+
+/* Botones del header */
 .tb-btn {
-  background:transparent; border:none; color:#333; font-size:9px;
-  cursor:pointer; height:100%; padding:0 8px;
-  display:flex; align-items:center;
-  -webkit-app-region:no-drag;
+  background: transparent;
+  border: none;
+  color: var(--ap-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  height: 100%;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+  transition: all 0.15s;
+  min-width: 28px;
 }
-.tb-btn:hover     { color:#00e676; background:#0a0a0a; }
-.tb-close:hover   { color:#fff; background:#c62828; }
 
-/* ── Cuerpo: KPIs izq + tubos centro + especiales der ── */
+.tb-btn:hover {
+  color: var(--ap-green);
+  background: var(--ap-bg-3);
+}
+
+.tb-close:hover {
+  color: #fff;
+  background: var(--ap-red);
+}
+
+/* ──────────────────────────────────────────────────────────
+   CUERPO
+   ────────────────────────────────────────────────────────── */
 .body {
-  flex:1; display:flex; flex-direction:row;
-  overflow:hidden; min-height:0;
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
 }
 
-/* Panel izquierdo: KPIs */
+/* ── Panel izquierdo: KPIs ── */
 .panel-left {
-  width:58px; flex-shrink:0; display:flex; flex-direction:column;
-  justify-content:center; gap:3px; padding:4px 5px;
-  background:#050505; border-right:1px solid #1a1a1a;
+  width: 52px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 4px;
+  background: var(--ap-bg-2);
+  border-right: 1px solid var(--ap-border);
 }
-.kpi       { text-align:center; }
-.kpi .lb   { font-size:6px; color:#555; text-transform:uppercase; display:block; line-height:1; letter-spacing:0.3px; }
-.kpi .vl   { font-size:12px; font-weight:800; line-height:1.3; }
-.kpi .un   { font-size:6px; color:#444; }
-.vl.g      { color:#00e676; }
-.vl.w      { color:#ccc; }
-.vl.r      { color:#ff1744; }
 
-/* Centro: tubos */
+.kpi {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 2px;
+}
+
+.kpi-icon {
+  font-size: 9px;
+  color: var(--ap-text-dim);
+  width: 11px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.kpi-data {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  flex: 1;
+  min-width: 0;
+}
+
+.kpi .vl {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+}
+
+.kpi .un {
+  font-size: 6px;
+  color: var(--ap-text-dim);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* Colores de valores */
+.vl.g {
+  color: var(--ap-green);
+}
+
+.vl.w {
+  color: var(--ap-text);
+}
+
+.vl.r {
+  color: var(--ap-red-hi);
+}
+
+/* ── Centro: tubos ── */
 .center {
-  flex:1; display:flex; flex-direction:column;
-  overflow:hidden; min-width:0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
 }
+
 .row {
-  flex:1; display:flex; flex-direction:row; flex-wrap:nowrap;
-  align-items:stretch; justify-content:center;
-  gap:1px; padding:2px 3px;
-  overflow-x:auto; overflow-y:hidden; min-height:0;
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  padding: 2px 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 0;
 }
-.row + .row              { border-top:1px solid #111; }
-.row::-webkit-scrollbar  { height:0; }
 
-/* Panel derecho: especiales */
+.row+.row {
+  border-top: 1px solid var(--ap-border-2);
+}
+
+.row::-webkit-scrollbar {
+  height: 0;
+}
+
+/* ── Panel derecho: sensores especiales ── */
 .panel-right {
-  width:50px; flex-shrink:0; display:flex; flex-direction:column;
-  justify-content:center; gap:3px; padding:4px 4px;
-  background:#050505; border-left:1px solid #1a1a1a;
+  width: 46px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 4px;
+  background: var(--ap-bg-2);
+  border-left: 1px solid var(--ap-border);
 }
-.ei        { display:flex; align-items:center; gap:3px; }
-.ei i      { font-size:8px; color:#333; width:12px; text-align:center; }
-.ei .lb    { font-size:5px; color:#444; text-transform:uppercase; }
-.ei .vl    { font-size:9px; font-weight:700; color:#555; }
-.ei .vl.ok   { color:#00e676; }
-.ei .vl.warn { color:#ffb300; }
 
-/* ── Tubos ── */
+.ei {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 2px;
+}
+
+.ei i {
+  font-size: 9px;
+  color: var(--ap-text-dim);
+  width: 11px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ei .vl {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ap-text-muted);
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  letter-spacing: -0.3px;
+}
+
+.ei .vl.ok {
+  color: var(--ap-green-hi);
+}
+
+.ei .vl.warn {
+  color: var(--ap-yellow);
+}
+
+/* ──────────────────────────────────────────────────────────
+   TUBOS (sensores de siembra)
+   ────────────────────────────────────────────────────────── */
 .t {
-  display:flex; flex-direction:column; flex:0 0 auto;
-  width:16px; border:1px solid #2a2a2a; border-radius:2px;
-  background:#0d0d0d; overflow:hidden; cursor:pointer;
-  transition:border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 13px;
+  /* reducido de 16px */
+  margin: 0 1px;
+  /* reemplaza gap para mejor ancho usable */
+  border: 1px solid var(--ap-border);
+  border-radius: 3px;
+  background: var(--ap-bg-2);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
 }
-.t:hover { border-color:#444; }
-.t.f       { border-color:#ff1744 !important; animation:blink .6s infinite; }
-.t.d       { border-color:#ffb300 !important; }
-/* Omitido manualmente por el operador */
-.t.omitido { border-color:#7a3a00 !important; }
-.t.omitido .n { color:#ff8c00 !important; }
-/* Cortado por AOG — visible para identificar qué surco está desactivado */
-.t.cortado { border-color:#333 !important; }
-.t.cortado .n { color:#333 !important; }
 
-@keyframes blink { 50% { border-color:#880000; } }
+.t:hover {
+  border-color: var(--ap-text-dim);
+  transform: translateY(-1px);
+}
 
+/* Estados de tubo */
+.t.f {
+  /* falla / alerta */
+  border-color: var(--ap-red-hi) !important;
+  animation: blink-red 0.6s infinite;
+}
+
+.t.d {
+  /* desvío de dosis */
+  border-color: var(--ap-yellow) !important;
+}
+
+.t.omitido {
+  /* omitido manualmente */
+  border-color: #7a3a00 !important;
+}
+
+.t.omitido .n {
+  color: var(--ap-orange) !important;
+}
+
+.t.cortado {
+  /* cortado por AOG */
+  border-color: var(--ap-border-2) !important;
+  opacity: 0.5;
+}
+
+.t.cortado .n {
+  color: var(--ap-text-dim) !important;
+}
+
+@keyframes blink-red {
+
+  0%,
+  100% {
+    border-color: var(--ap-red-hi);
+  }
+
+  50% {
+    border-color: #7a0f1f;
+  }
+}
+
+/* Número del surco */
 .n {
-  font-size:8px; text-align:center; color:#faf7f7; background:#111;
-  border-bottom:1px solid #1a1a1a; line-height:1.4; flex-shrink:0;
+  font-size: 7px;
+  /* reducido de 8px */
+  text-align: center;
+  color: var(--ap-text);
+  background: var(--ap-bg-3);
+  border-bottom: 1px solid var(--ap-border-2);
+  line-height: 1.5;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
-.b  { flex:1; position:relative; display:flex; flex-direction:column; justify-content:flex-end; }
-.fl { width:100%; transition:height .3s, background .3s; border-radius:0 0 1px 1px; }
-.ld { position:absolute; top:2px; left:0; right:0; display:flex; justify-content:space-between; padding:0 2px; }
-.l  { width:4px; height:4px; border-radius:50%; background:#1a1a1a; }
-.lg { background:#00e676; }
-.lb { background:#42a5f5; }
+
+/* Cuerpo del tubo (barra de llenado) */
+.b {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+/* Llenado (height y background se controlan desde bar.js) */
+.fl {
+  width: 100%;
+  transition: height 0.25s ease-out, background 0.25s;
+  border-radius: 0 0 2px 2px;
+}
+
+/* LEDs de ferti (línea y costado) */
+.ld {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1px;
+}
+
+.l {
+  width: 3px;
+  /* reducido de 4px */
+  height: 3px;
+  border-radius: 50%;
+  background: var(--ap-border);
+}
+
+.lg {
+  background: var(--ap-green-hi);
+  box-shadow: 0 0 3px var(--ap-green-hi);
+}
+
+.lb {
+  background: var(--ap-blue);
+  box-shadow: 0 0 3px var(--ap-blue);
+}
+
+/* ── Badge de monitoreo activo ───────────────────────── */
+.mon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  -webkit-app-region: no-drag;
+}
+
+.mon-badge i {
+  font-size: 6px;
+}
+
+.mon-badge.activo {
+  background: rgba(132, 204, 22, 0.15);
+  color: var(--ap-green);
+  border: 1px solid var(--ap-green);
+}
+
+.mon-badge.activo i {
+  color: var(--ap-green-hi);
+  animation: mon-pulse 1.5s ease-in-out infinite;
+}
+
+.mon-badge.standby {
+  background: rgba(138, 155, 176, 0.08);
+  color: var(--ap-text-dim);
+  border: 1px solid var(--ap-border);
+}
+
+.mon-badge.standby i {
+  color: var(--ap-text-dim);
+}
+
+@keyframes mon-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+/* ── Sin-dato: azul apagado, indica "nodo sin reportar" ── */
+.t.sin-dato {
+  border-color: #2d4a5a !important;
+  background: #0a1420 !important;
+  opacity: 0.75;
+}
+
+.t.sin-dato .n {
+  color: #5a7a92 !important;
+  background: #0f1e2c !important;
+}
+
+.t.sin-dato .fl {
+  background: #1a2835 !important;
+}
+
+.t.sin-dato .l {
+  background: #1f2f40 !important;
+}
+
+/* ── Pulso visual con monitoreo activo: verde brillante ── */
+@keyframes pulse-mon {
+  0% {
+    background: rgba(0, 230, 118, 0.9);
+    border-color: #00e676;
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.8);
+    transform: scale(1);
+  }
+
+  50% {
+    background: rgba(0, 230, 118, 0.5);
+    border-color: #00e676;
+    box-shadow: 0 0 6px 2px rgba(0, 230, 118, 0.5);
+  }
+
+  100% {
+    background: transparent;
+    border-color: var(--ap-border);
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
+    transform: scale(1);
+  }
+}
+
+.t.pulse-mon {
+  animation: pulse-mon 0.35s ease-out !important;
+}
+
+/* ── Pulso visual en stand-by: verde atenuado ── */
+@keyframes pulse-standby {
+  0% {
+    background: rgba(0, 230, 118, 0.6);
+    border-color: #00e676;
+    box-shadow: 0 0 8px 2px rgba(0, 230, 118, 0.5);
+  }
+
+  60% {
+    background: rgba(0, 230, 118, 0.3);
+    border-color: #3a7a55;
+    box-shadow: 0 0 4px 1px rgba(0, 230, 118, 0.3);
+  }
+
+  100% {
+    background: transparent;
+    border-color: var(--ap-border);
+    box-shadow: none;
+  }
+}
+
+.t.pulse-standby {
+  animation: pulse-standby 0.35s ease-out !important;
+}
+
+/* ── Indicador global: body tiene clase "monitoreando" cuando activo ── */
+/* Útil si querés estilos diferentes a nivel global */
+body.monitoreando .panel-left,
+body.monitoreando .panel-right {
+  /* Por ejemplo, un borde verde sutil en los paneles cuando monitoreando */
+  /* border-color: rgba(132, 204, 22, 0.3); */
+}
+
+.audio-unlock-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, var(--ap-bg) 0%, var(--ap-bg-2) 100%);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+  -webkit-app-region: no-drag;
+}
+
+/* Estado "desapareciendo" cuando el usuario toca */
+.audio-unlock-overlay.dismissed {
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+
+/* Contenido centrado */
+.audio-unlock-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  max-width: 90%;
+}
+
+.audio-unlock-logo {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--ap-text);
+  margin-bottom: 4px;
+}
+
+.audio-unlock-logo .accent {
+  color: var(--ap-green);
+}
+
+.audio-unlock-icon {
+  font-size: 22px;
+  color: var(--ap-green);
+  animation: unlock-pulse 1.2s ease-in-out infinite;
+}
+
+.audio-unlock-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--ap-green);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.audio-unlock-subtitle {
+  font-size: 8px;
+  color: var(--ap-text-muted);
+  letter-spacing: 0.3px;
+  max-width: 280px;
+  line-height: 1.3;
+}
+
+/* Animación del icono (subir y bajar como "tap") */
+@keyframes unlock-pulse {
+
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translateY(-4px);
+    opacity: 0.7;
+  }
+}

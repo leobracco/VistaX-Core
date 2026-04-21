@@ -14,13 +14,25 @@ const { publicarConfigCables } = require("../core/logic/cable_config_publisher")
 router.get("/perfiles", (req, res) => {
   try {
     const perfiles = profilesManager.listProfilesDetailed();
-    const activo = profilesManager.getLastProfileName();
-    res.json({ ok: true, perfiles, activo });
+    const activoId = profilesManager.getLastProfileName();
+    const activoPerfil = profilesManager.getActiveProfile(activoId);
+    
+    // ▶ NUEVO: Incluir estructura de trenes del perfil activo
+    let trenesEstructura = null;
+    if (activoPerfil) {
+      trenesEstructura = profilesManager.calcularRangosTrenes(activoPerfil);
+    }
+    
+    res.json({ 
+      ok: true, 
+      perfiles, 
+      activo: activoId,
+      trenes: trenesEstructura  // ← NUEVO
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }
 });
-
 // POST /api/config/perfiles/activar — Cambiar perfil activo
 router.post("/perfiles/activar", (req, res) => {
   const { id } = req.body;
@@ -110,38 +122,79 @@ router.get("/maquinas", (req, res) => {
 
 router.get("/maquinas/:id", (req, res) => {
   const profile = profilesManager.getActiveProfile(req.params.id);
-  if (profile) res.json(profile);
-  else res.status(404).send("Máquina no encontrada");
+  if (!profile) {
+    return res.status(404).json({ ok: false, error: "Máquina no encontrada" });
+  }
+  
+  // ▶ NUEVO: Incluir estructura calculada de trenes
+  const estructura = profilesManager.calcularRangosTrenes(profile);
+  
+  res.json({ 
+    ...profile,
+    _trenesEstructura: estructura  // Metadato calculado
+  });
 });
 
 router.post("/maquinas/guardar", (req, res) => {
   const config = req.body;
-  const profileId = config.id || config.nombre.toLowerCase().replace(/ /g, "_");
-  config.id = profileId;
-
-  const PROFILES_DIR = path.join(__dirname, "../data/implementos");
-  fs.writeFileSync(
-    path.join(PROFILES_DIR, `${profileId}.json`),
-    JSON.stringify(config, null, 2),
-  );
-
-  profilesManager.setLastProfileName(profileId);
-  console.log(`Configuración guardada y activada: ${profileId}`);
-
-  // ── Republicar config de cables a los nodos ──
-  const mqttHandler = req.app.locals.mqttHandler;
-  if (mqttHandler?.recargarConfig) mqttHandler.recargarConfig();
-  if (mqttHandler?.republicarConfigCables) {
-    mqttHandler.republicarConfigCables();
-  } else if (mqttHandler) {
-    publicarConfigCables(mqttHandler, config);
+  if (!config.nombre) {
+    return res.status(400).json({ ok: false, error: "Falta nombre" });
   }
-
-  // Notificar a todas las ventanas que recarguen
+ 
+  const profileId = config.id || config.nombre.toLowerCase().replace(/[^a-z0-9_]/g, "_");
+  config.id = profileId;
+ 
+  // ▶ NUEVO: Validar y crear estructura mínima
+  if (!config.setup) config.setup = {};
+  if (!config.trenes) config.trenes = {};
+  if (!config.mapeo_sensores) config.mapeo_sensores = [];
+ 
+  // Asegurar que exista el directorio
+  const PROFILES_DIR = path.join(__dirname, "../data/implementos");
+  if (!fs.existsSync(PROFILES_DIR)) {
+    fs.mkdirSync(PROFILES_DIR, { recursive: true });
+  }
+ 
+  try {
+    fs.writeFileSync(
+      path.join(PROFILES_DIR, `${profileId}.json`),
+      JSON.stringify(config, null, 2),
+      "utf-8"
+    );
+    console.log(`\x1b[32m[Config]\x1b[0m Perfil guardado: ${profileId}`);
+  } catch (err) {
+    console.error("[Config] Error guardando:", err.message);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+ 
+  // Guardar como último perfil
+  profilesManager.setLastProfileName(profileId);
+ 
+  // ▶ NUEVO: Republicar cables a nodos
+  const mqttHandler = req.app.locals.mqttHandler;
+  let cableResult = null;
+  if (mqttHandler?.republicarConfigCables) {
+    try {
+      const ok = mqttHandler.republicarConfigCables();
+      cableResult = { ok };
+      console.log(`\x1b[36m[Config]\x1b[0m Cables republicados a nodos`);
+    } catch (e) {
+      console.warn(`[Config] Error republicando cables:`, e.message);
+    }
+  }
+ 
+  // Notificar a todas las ventanas
   const io = req.app.locals.io;
-  if (io) io.emit("profile_changed", { id: profileId });
-
-  res.json({ status: "ok", id: profileId });
+  if (io) {
+    io.emit("profile_changed", { id: profileId, nombre: config.nombre });
+    io.emit("config_saved", { perfil: profileId });
+  }
+ 
+  res.json({ 
+    ok: true, 
+    id: profileId, 
+    cables: cableResult 
+  });
 });
 
 // ══════════════════════════════════════════════════════════

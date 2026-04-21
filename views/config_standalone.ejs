@@ -1,75 +1,115 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VistaX — Configuración</title>
-  <link rel="stylesheet" href="/css/all.min.css"/>
-  <link rel="stylesheet" href="/css/vistax.css"/>
-  <link rel="stylesheet" href="/css/vistax_v2.css"/>
+
+  <!-- Font Awesome (mismo que usa bar.ejs) -->
+  <link rel="stylesheet"
+        href="/css/all.min.css" />
+
+  <link rel="stylesheet" href="/css/config/config_modal.css" />
+   <script src="/socket.io/socket.io.js"></script>
 </head>
-<body style="background:#111; overflow:auto;">
+<body>
+
+  <div class="cfg-app">
+
+    <!-- ═══════════════ HEADER ═══════════════ -->
+    <header class="cfg-header">
+      <div class="logo">
+        VISTA<span class="accent">X</span>
+        <span style="color: var(--ap-text-dim); font-weight: 400; margin-left: 8px;">
+          Configuración
+        </span>
+      </div>
+      <div class="perfil-activo">
+        Perfil activo:
+        <span class="nombre" id="cfg-perfil-activo">—</span>
+      </div>
+    </header>
+
+    <!-- ═══════════════ SIDEBAR ═══════════════ -->
+    <nav class="cfg-sidebar" id="cfg-sidebar">
+      <div class="cfg-tab active" data-tab="perfiles">
+        <i class="fas fa-layer-group"></i>
+        <span>Perfiles</span>
+      </div>
+       <div class="cfg-tab" data-tab="nodos">
+        <i class="fas fa-microchip"></i>
+        <span>Nodos</span>
+      </div>
+      <div class="cfg-tab" data-tab="trenes">
+        <i class="fas fa-train"></i>
+        <span>Trenes</span>
+      </div>
+      <div class="cfg-tab" data-tab="sensores">
+        <i class="fas fa-broadcast-tower"></i>
+        <span>Sensores</span>
+      </div>
+      <div class="cfg-tab" data-tab="mapeo">
+        <i class="fas fa-map"></i>
+        <span>Mapeo Visual</span>
+      </div>
+      <div class="cfg-tab" data-tab="pantalla">
+        <i class="fas fa-volume-high"></i>
+        <span>Pantalla y Sonidos</span>
+      </div>
+      <div class="cfg-tab" data-tab="monitoreo">
+        <i class="fas fa-gauge-high"></i>
+        <span>Monitoreo</span>
+      </div>
+      <div class="cfg-tab" data-tab="prueba" onclick="window.open('/prueba','prueba','width=420,height=800')">
+        <i class="fas fa-vial"></i>
+        <span>Prueba Sensores</span>
+        <i class="fas fa-arrow-up-right-from-square" style="margin-left:auto;font-size:10px;opacity:0.6;"></i>
+      </div>
+    </nav>
+
+    <!-- ═══════════════ CONTENT ═══════════════ -->
+    <main class="cfg-content" id="cfg-content">
+      <div class="cfg-loading">
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span>Cargando configuración...</span>
+      </div>
+    </main>
+
+    <!-- ═══════════════ FOOTER ═══════════════ -->
+    <footer class="cfg-footer">
+      <div class="status" id="cfg-status">VistaX v3.0 · Modal nuevo</div>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="window.close()">
+          <i class="fas fa-xmark"></i> Cerrar
+        </button>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Container de toasts -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ═══════════════ SCRIPTS ═══════════════ -->
+  <script src="/js/config/tab_base.js"></script>
+  <script src="/js/config/sonido_eventos.js"></script>
+  <script src="/js/config/tabs/tab_perfiles.js"></script>
+  <script src="/js/config/tabs/tab_nodos.js"></script>
+   <script src="/js/config/tabs/tab_trenes.js"></script>
+    <script src="/js/config/tabs/tab_sensores.js"></script>
+    <script src="/js/config/tabs/tab_monitoreo.js"></script>
+    <script src="/js/config/tabs/tab_pantalla.js"></script>
+    <script src="/js/config/tabs/tab_mapeo.js"></script>
+    
+  <script src="/js/config/config_modal.js"></script>
 
   <script>
-    window.APP_CONFIG = <%- JSON.stringify(config || {}) %>;
-  </script>
-
-  <!-- Incluir el modal de config (mismo partial) pero forzado visible -->
-  <%- include('partials/config_modal') %>
-
- <script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
-  window.socket = socket;
-</script>
-<script src="/js/config_perfiles.js?v=1"></script>   <!-- ANTES de config_modal -->
-<script src="/js/config_modal.js"></script>
-<script src="/js/ota_functions_v3.js"></script>
-<script src="/js/nodos_inventario.js"></script>
-  <script>
-    // Abrir el modal automáticamente al cargar
-    document.addEventListener('DOMContentLoaded', () => {
-      const modal = document.getElementById('modal-config');
-      if (modal) {
-        // En standalone: quitar overlay oscuro, hacer fullscreen directo
-        modal.style.display = 'flex';
-        modal.style.background = 'transparent';
-      }
-
-      // Poblar campos
-      const sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-      sv("cfg-nombre", APP_CONFIG.nombre || "Máquina Sin Nombre");
-      sv("cfg-distancia", APP_CONFIG.setup?.distancia_entre_surcos || 0.191);
-      sv("cfg-k", APP_CONFIG.setup?.factor_k_default || 0.15);
-      sv("cfg-p1000", APP_CONFIG.setup?.p1000 || 180);
-      sv("cfg-rpm-min", APP_CONFIG.setup?.rpm_min || 2000);
-      sv("cfg-rpm-max", APP_CONFIG.setup?.rpm_max || 5000);
-      sv("cfg-qty-tolvas", APP_CONFIG.setup?.tolvas || 2);
-      sv("cfg-tolerancia-desvio", APP_CONFIG.setup?.tolerancia_desvio || 20);
-
-      const txtId = document.getElementById("cfg-id-maquina");
-      if (txtId) txtId.innerText = 'ID: ' + (APP_CONFIG.id || "N/A");
-
-      if (typeof workingMapeo !== 'undefined') {
-        workingMapeo = JSON.parse(JSON.stringify(APP_CONFIG.mapeo_sensores || []));
-      }
-      if (typeof _renderizarObjetivosTren === 'function') _renderizarObjetivosTren();
-      if (typeof actualizarSelectNodos === 'function') actualizarSelectNodos();
-      if (typeof switchTab === 'function') switchTab("general");
-    });
-
-    // Override cerrarModal para cerrar la ventana
-    function cerrarModal() {
-      if (window.modalClose) window.modalClose();
-      else window.close();
-    }
-
-    // Drag desde el top del modal (tabs-bar o los primeros 40px)
-    document.addEventListener('mousedown', (e) => {
-      if (!window.modalDrag) return;
-      const target = e.target.closest('.modal-tabs, .tabs-bar, .tab-btn');
-      if (target) window.modalDrag();
+    // Arranque
+    document.addEventListener("DOMContentLoaded", () => {
+      window.cfgModal = new ConfigModal();
+      window.cfgModal.abrir();
     });
   </script>
+
 </body>
 </html>

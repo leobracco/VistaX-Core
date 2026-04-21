@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f1620" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>VistaX — Prueba de Sensores</title>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="/css/prueba.css" />
+</head>
+<body>
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header class="prueba-header">
+    <div class="prueba-logo">
+      VISTA<span class="accent">X</span>
+      <span class="modo-label">PRUEBA</span>
+    </div>
+    <div class="prueba-status" id="prueba-status">
+  <span class="dot offline" id="conn-dot"></span>
+  <span id="conn-text">Conectando…</span>
+</div>
+<button class="prueba-close" onclick="window.close()" title="Cerrar">
+  <i class="fas fa-xmark"></i>
+</button>
+  </header>
+
+  <!-- ═══════════════ STATS ═══════════════ -->
+  <div class="prueba-stats" id="prueba-stats">
+    <div class="stat">
+      <strong id="stat-total">0</strong>
+      <span>Sensores</span>
+    </div>
+    <div class="stat">
+      <strong id="stat-activos">0</strong>
+      <span>Activos</span>
+    </div>
+    <div class="stat">
+      <strong id="stat-pulsos">0</strong>
+      <span>Pulsos hoy</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════ CONTROLES ═══════════════ -->
+  <div class="prueba-controles">
+    <div class="filtros" id="prueba-filtros">
+      <button class="filtro-btn active" data-filtro="todos">
+        <i class="fas fa-list"></i> Todos
+      </button>
+      <!-- Los filtros por tren se generan dinámicamente -->
+    </div>
+    <div class="opciones">
+      <button class="opt-btn" id="btn-vibrar" title="Vibrar al recibir pulso">
+        <i class="fas fa-mobile-screen-button"></i>
+      </button>
+      <button class="opt-btn" id="btn-reset" title="Reiniciar contadores">
+        <i class="fas fa-rotate-left"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ GRID DE SENSORES ═══════════════ -->
+  <main class="prueba-grid-wrap">
+    <div id="prueba-grid">
+      <div class="prueba-loading">
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span>Cargando sensores…</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer class="prueba-footer">
+    <span id="prueba-perfil">—</span>
+    <span class="separator">·</span>
+    <span>Tirá semilla a mano para probar el sensor</span>
+  </footer>
+
+  <!-- ═══════════════ SCRIPTS ═══════════════ -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/prueba.js"></script>
+
+</body>
+</html>

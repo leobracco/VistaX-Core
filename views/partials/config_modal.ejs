@@ -5,7 +5,7 @@
         <i class="fas fa-tools"></i>
         <div>
           <h2>CONFIGURACIÓN DEL IMPLEMENTO</h2>
-          <small id="cfg-id-maquina">ID: —</small>
+          <small id="cfg-id-maquina">ID: tanzi_43_semilla</small>
         </div>
       </div>
       <button class="close-btn" onclick="cerrarModal()">&times;</button>
@@ -15,20 +15,20 @@
       <div class="config-layout">
         <aside class="config-sidebar">
           <div class="sidebar-nav">
-            <button class="tab-btn active" onclick="switchTab('perfiles')">
-              <i class="fas fa-folder-open"></i> <span>Perfiles</span>
-            </button>
-            <button class="tab-btn" onclick="switchTab('nodos')">
-  <i class="fas fa-microchip"></i> <span>Nodos</span>
-</button>
-            <button class="tab-btn" onclick="switchTab('general')">
+            <button class="tab-btn active" onclick="switchTab('general')">
               <i class="fas fa-sliders-h"></i> <span>General</span>
             </button>
+            <button class="tab-btn" onclick="switchTab('nodos')">
+              <i class="fas fa-network-wired"></i> <span>Nodos</span>
+            </button>
             <button class="tab-btn" onclick="switchTab('trenes')">
-              <i class="fas fa-train"></i> <span>Trenes</span>
+              <i class="fas fa-th-list"></i> <span>Trenes</span>
             </button>
             <button class="tab-btn" onclick="switchTab('sensores')">
               <i class="fas fa-microchip"></i> <span>Sensores</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('perfiles')">
+              <i class="fas fa-user-circle"></i> <span>Perfiles</span>
             </button>
             <button class="tab-btn" onclick="switchTab('mapeo')">
               <i class="fas fa-project-diagram"></i> <span>Mapeo Visual</span>
@@ -37,46 +37,29 @@
               <i class="fas fa-desktop"></i> <span>Pantalla y Sonido</span>
             </button>
             <button class="tab-btn" onclick="switchTab('monitoreo')">
-              <i class="fas fa-play-circle"></i> <span>Monitoreo</span>
+              <i class="fas fa-chart-line"></i> <span>Monitoreo</span>
             </button>
           </div>
 
           <div class="sidebar-info">
             <label>Máquina Actual</label>
             <select id="select-maquina-archivo" class="config-select-main">
-              <option value="">Cargando...</option>
+              <option value="tanzi_43_semilla.json">
+                tanzi_43_semilla.json
+              </option>
             </select>
           </div>
         </aside>
 
         <section class="config-main">
 
-          <!-- ═══ TAB PERFILES (nuevo) ═══ -->
-          <div id="tab-perfiles" class="tab-content active">
-            <div class="section-header">
-              <h3>Perfiles de Implemento</h3>
-              <p>Cada perfil es una configuración completa de sembradora. Creá, duplicá o cambiá entre ellos.</p>
-            </div>
-
-            <div style="display:flex;gap:8px;margin-bottom:16px;">
-              <button class="btn-action-add" onclick="crearNuevoPerfil()" style="flex:0 0 auto">
-                <i class="fas fa-plus"></i> NUEVO PERFIL
-              </button>
-            </div>
-
-            <div id="perfiles-lista" style="display:flex;flex-direction:column;gap:8px;">
-              <div style="color:#555;font-size:12px;text-align:center;padding:20px">Cargando perfiles...</div>
-            </div>
-          </div>
-
-          <!-- ═══ TAB NODOS ═══ -->
-            <%- include('config_tab_nodos') %>
-          <!-- ═══ TAB GENERAL (limpio) ═══ -->
-          <div id="tab-general" class="tab-content" style="display:none">
+          <!-- ===== TAB: GENERAL ===== -->
+          <div id="tab-general" class="tab-content active">
             <div class="section-header">
               <h3>Estructura de la Sembradora</h3>
-              <p>Parámetros base del implemento.</p>
+              <p>Parámetros base del Implemento.</p>
             </div>
+
             <div class="card-grid">
               <div class="input-card">
                 <label>Nombre del Implemento</label>
@@ -84,81 +67,234 @@
               </div>
               <div class="input-card">
                 <label>Distancia entre Líneas (m)</label>
-                <input type="number" step="0.001" id="cfg-distancia" placeholder="0.191" />
+                <input
+                  type="number"
+                  step="0.001"
+                  id="cfg-distancia"
+                  placeholder="0.525"
+                />
               </div>
               <div class="input-card">
                 <label>Tolerancia de Desvío (%)</label>
-                <input type="number" step="1" id="cfg-tolerancia-desvio" placeholder="20" />
+                <input type="number" id="cfg-tolerancia" placeholder="20" />
               </div>
               <div class="input-card">
                 <label>RPM Turbina (Mínimo)</label>
-                <input type="number" id="cfg-rpm-min" placeholder="2500" />
+                <input type="number" id="cfg-rpm-min" placeholder="2000" />
               </div>
               <div class="input-card">
                 <label>RPM Turbina (Máximo)</label>
-                <input type="number" id="cfg-rpm-max" placeholder="4500" />
+                <input type="number" id="cfg-rpm-max" placeholder="5000" />
               </div>
               <div class="input-card">
-                <label>Cantidad de Tolvas</label>
-                <input type="number" id="cfg-qty-tolvas" value="2" />
+                <label>Factor K (Pulsos/Semilla)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  id="cfg-k"
+                  placeholder="0.15"
+                />
+              </div>
+              <div class="input-card">
+                <label>Peso de 1000 semillas (g)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  id="cfg-p1000"
+                  placeholder="Ej: 180"
+                />
               </div>
             </div>
 
-            <div class="section-header" style="margin-top:20px">
+            <!-- Objetivo de Densidad por Tren -->
+            <div class="section-header" style="margin-top: 20px">
               <h3>Objetivo de Densidad por Tren</h3>
               <p>Si no se especifica, se usa el objetivo global del header.</p>
             </div>
-            <div class="card-grid" id="cfg-objetivos-trenes"></div>
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Objetivo Tren 1 (S/M)</label>
+                <input type="number" id="cfg-densidad-t1" placeholder="16" />
+              </div>
+              <div class="input-card">
+                <label>Objetivo Tren 2 (S/M)</label>
+                <input type="number" id="cfg-densidad-t2" placeholder="16" />
+              </div>
+            </div>
+
+            <!-- Estructura de Trenes -->
+            <div class="section-header" style="margin-top: 20px">
+              <h3>Estructura de Trenes de Siembra</h3>
+              <p>Define la cantidad de trenes (unidades de siembra independientes).</p>
+            </div>
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Cantidad de Trenes</label>
+                <input
+                  type="number"
+                  id="cfg-qty-trenes"
+                  value="2"
+                  min="1"
+                  max="10"
+                  placeholder="Ej: 2"
+                />
+              </div>
+            </div>
+
+            <!-- Cantidades por Tipo de Sensor de Siembra -->
+            <div class="section-header" style="margin-top: 20px">
+              <h3>Cantidad de Surcos y Sensores de Siembra</h3>
+              <p>
+                Define la cantidad de surcos y los sensores de siembra y fertilizante asociados.
+                Cada sensor se puede asignar independientemente a cualquier surco en la pestaña <strong>Sensores</strong>.
+              </p>
+            </div>
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Cantidad Total de Surcos</label>
+                <input
+                  type="number"
+                  id="cfg-qty-surcos"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 43"
+                />
+              </div>
+              <div class="input-card">
+                <label>Sensores de Semilla</label>
+                <input
+                  type="number"
+                  id="cfg-qty-semilla"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 43"
+                />
+              </div>
+              <div class="input-card">
+                <label>Sensores de Fertilizante en Línea</label>
+                <input
+                  type="number"
+                  id="cfg-qty-ferti-linea"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 43"
+                />
+              </div>
+              <div class="input-card">
+                <label>Sensores de Fertilizante Lateral (Costado)</label>
+                <input
+                  type="number"
+                  id="cfg-qty-ferti-costado"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 0"
+                />
+              </div>
+            </div>
+
+            <!-- Sensores Especiales -->
+            <div class="section-header" style="margin-top: 20px">
+              <h3>Sensores de Estado y Control</h3>
+              <p>Sensores de turbina, rotación, tolvas, baterías y otros dispositivos de monitoreo.</p>
+            </div>
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Sensores RPM Turbina</label>
+                <input
+                  type="number"
+                  id="cfg-qty-rpm"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 2"
+                />
+              </div>
+              <div class="input-card">
+                <label>Sensores de Rotación de Eje</label>
+                <input
+                  type="number"
+                  id="cfg-qty-rotacion"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 2"
+                />
+              </div>
+              <div class="input-card">
+                <label>Cantidad de Tolvas</label>
+                <input
+                  type="number"
+                  id="cfg-qty-tolvas"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 2"
+                />
+              </div>
+              <div class="input-card">
+                <label>Sensores de Batería</label>
+                <input
+                  type="number"
+                  id="cfg-qty-baterias"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 2"
+                />
+              </div>
+              <div class="input-card">
+                <label>Sensores de Trabajo / Herramienta</label>
+                <input
+                  type="number"
+                  id="cfg-qty-trabajo"
+                  value="0"
+                  min="0"
+                  placeholder="Ej: 1"
+                />
+              </div>
+            </div>
           </div>
-          <div id="tab-trenes" class="tab-content" style="display: none">
-  <div class="section-header">
-    <h3>Estructura de Trenes</h3>
-    <p>Definí cuántos trenes tiene tu sembradora y cuántos surcos por tren. La numeración se calcula automáticamente.</p>
-  </div>
 
-  <div style="display: flex; gap: 20px; margin-bottom: 20px">
-    <div class="input-card" style="flex: 0 0 200px">
-      <label>Cantidad de Trenes</label>
-      <input type="number" id="cfg-qty-trenes" min="1" max="6" value="2" onchange="_onCantTrenesChange()">
-    </div>
-  </div>
+          <!-- ===== TAB: NODOS ===== -->
+          <div id="tab-nodos" class="tab-content" style="display: none">
+            <div class="section-header">
+              <h3>Inventario de Nodos ESP32</h3>
+              <p>Nodos conectados al sistema. Selecciona uno para configurar sus sensores.</p>
+            </div>
 
-  <div id="cfg-trenes-lista" style="display: grid; grid-template-columns: 1fr; gap: 12px;">
-    <!-- Se genera dinámicamente con JS -->
-  </div>
-
-  <div id="cfg-trenes-preview" class="help-text" style="margin-top: 20px; padding: 12px; background: #1a1a1a; border-left: 3px solid var(--accent); border-radius: 4px;">
-    <!-- Preview calculado en vivo -->
-  </div>
-
-  <div id="cfg-trenes-warning" style="display: none; margin-top: 12px; padding: 12px; background: #2a1a00; border-left: 3px solid #ffa500; border-radius: 4px; color: #ffa500;">
-    <!-- Advertencias de inconsistencia con el mapeo actual -->
-  </div>
-</div>
-          <!-- ═══ TAB SENSORES ═══ -->
-          <div id="tab-sensores" class="tab-content" style="display:none">
-            <div class="table-header-actions" style="flex-wrap:wrap; gap:15px">
-              <div style="flex:1; min-width:250px">
-                <label style="color:var(--accent);font-size:10px;font-weight:bold;text-transform:uppercase;display:block;margin-bottom:5px;">
-                  Viendo configuración del Nodo:
+            <div
+              style="
+                display: flex;
+                gap: 15px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+                align-items: center;
+              "
+            >
+              <div style="flex: 1; min-width: 250px">
+                <label
+                  style="
+                    color: var(--accent);
+                    font-size: 10px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    display: block;
+                    margin-bottom: 5px;
+                  "
+                >
+                  Seleccionar Nodo:
                 </label>
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                  <select id="select-nodo-filter" class="config-select-main" onchange="cambiarNodo()"></select>
-                  <button class="btn-cancel" style="padding:8px 15px" onclick="agregarNuevoNodo()">+ NODO</button>
-                  <button class="btn-cancel" style="padding: 8px 15px" onclick="actualizarSelectNodos(nodoActual)" title="Recargar lista de nodos">
-  <i class="fas fa-sync"></i>
-</button>
+                <div style="display: flex; gap: 10px">
+                  <select
+                    id="select-nodo-filter"
+                    class="config-select-main"
+                    onchange="cambiarNodo()"
+                  ></select>
                   <button
-                    id="btn-abrir-ota"
-                    onclick="abrirModalOTA()"
-                    title="Actualización OTA"
-                    style="padding:8px 14px;background:transparent;color:#ffea00;border:1px solid #ffea00;border-radius:4px;font-size:11px;font-weight:bold;cursor:pointer;"
-                    onmouseover="this.style.background='rgba(255,234,0,0.1)'"
-                    onmouseout="this.style.background='transparent'"
-                  >⬆ OTA</button>
+                    class="btn-cancel"
+                    style="padding: 8px 15px"
+                    onclick="agregarNuevoNodo()"
+                  >
+                    + NODO
+                  </button>
                 </div>
               </div>
-
               <button class="btn-action-add" onclick="agregarFilaSensor()">
                 <i class="fas fa-plus"></i> AGREGAR CABLE
               </button>
@@ -172,7 +308,7 @@
                     <th>BAJADA / SURCO #</th>
                     <th>TREN</th>
                     <th>TIPO DE SENSOR</th>
-                    <th style="text-align:center">ACTIVO</th>
+                    <th style="text-align: center">ACCIÓN</th>
                   </tr>
                 </thead>
                 <tbody id="lista-sensores-tbody"></tbody>
@@ -180,17 +316,197 @@
             </div>
           </div>
 
-          <!-- ═══ TAB MAPEO ═══ -->
-          <div id="tab-mapeo" class="tab-content" style="display:none">
+          <!-- ===== TAB: TRENES ===== -->
+          <div id="tab-trenes" class="tab-content" style="display: none">
+            <div class="section-header">
+              <h3>Estructura de Trenes de Siembra</h3>
+              <p>Define la configuración física de cada tren (número de surcos, orden, nombres).</p>
+            </div>
+
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Tren 1 - Nombre</label>
+                <input type="text" id="cfg-tren1-nombre" placeholder="Ej: Delantero" />
+              </div>
+              <div class="input-card">
+                <label>Tren 1 - Cantidad de Surcos</label>
+                <input type="number" id="cfg-tren1-surcos" placeholder="19" />
+              </div>
+              <div class="input-card">
+                <label>Tren 1 - Orden de Numeración</label>
+                <input type="number" id="cfg-tren1-orden" placeholder="1" />
+              </div>
+            </div>
+
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Tren 2 - Nombre</label>
+                <input type="text" id="cfg-tren2-nombre" placeholder="Ej: Trasero" />
+              </div>
+              <div class="input-card">
+                <label>Tren 2 - Cantidad de Surcos</label>
+                <input type="number" id="cfg-tren2-surcos" placeholder="24" />
+              </div>
+              <div class="input-card">
+                <label>Tren 2 - Orden de Numeración</label>
+                <input type="number" id="cfg-tren2-orden" placeholder="2" />
+              </div>
+            </div>
+
+            <div class="section-header" style="margin-top: 20px">
+              <h3>Vista Previa de Trenes</h3>
+              <p>Estos serán los rangos de surcos asignados:</p>
+            </div>
+            <div id="preview-trenes" class="card-grid">
+              <div style="padding: 15px; background: var(--bg-darker); border-radius: 8px; color: var(--text-muted);">
+                <p>Configurar trenes arriba para ver preview</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== TAB: SENSORES ===== -->
+          <div id="tab-sensores" class="tab-content" style="display: none">
+            <div class="section-header">
+              <h3>Mapeo de Sensores por Nodo</h3>
+              <p>Asigna los cables de cada nodo a surcos y tipos de sensores.</p>
+            </div>
+
+            <div
+              class="table-header-actions"
+              style="flex-wrap: wrap; gap: 15px"
+            >
+              <div style="flex: 1; min-width: 250px">
+                <label
+                  style="
+                    color: var(--accent);
+                    font-size: 10px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    display: block;
+                    margin-bottom: 5px;
+                  "
+                >
+                  Viendo configuración del Nodo:
+                </label>
+                <div style="display: flex; gap: 10px">
+                  <select
+                    id="select-nodo-filter-sensores"
+                    class="config-select-main"
+                    onchange="cambiarNodo()"
+                  ></select>
+                  <button
+                    class="btn-cancel"
+                    style="padding: 8px 15px"
+                    onclick="agregarNuevoNodo()"
+                  >
+                    + NODO
+                  </button>
+                </div>
+              </div>
+              <button class="btn-action-add" onclick="agregarFilaSensor()">
+                <i class="fas fa-plus"></i> AGREGAR CABLE
+              </button>
+            </div>
+
+            <div class="mapeo-container table-scroll">
+              <table class="config-table">
+                <thead>
+                  <tr>
+                    <th>CABLE PIN (1-7)</th>
+                    <th>BAJADA / SURCO #</th>
+                    <th>TREN</th>
+                    <th>TIPO DE SENSOR</th>
+                    <th style="text-align: center">ACCIÓN</th>
+                  </tr>
+                </thead>
+                <tbody id="lista-sensores-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ===== TAB: PERFILES ===== -->
+          <div id="tab-perfiles" class="tab-content" style="display: none">
+            <div class="section-header">
+              <h3>Gestión de Perfiles de Usuario</h3>
+              <p>Define roles y permisos de acceso a diferentes funcionalidades.</p>
+            </div>
+
+            <div class="card-grid">
+              <div class="input-card">
+                <label>Perfil Actual</label>
+                <select id="cfg-perfil-actual" class="config-select-main">
+                  <option value="operario">Operario</option>
+                  <option value="tecnico">Técnico</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+              <div class="input-card">
+                <label>Contraseña de Acceso Técnico</label>
+                <input type="password" id="cfg-password-tecnico" placeholder="••••••••" />
+              </div>
+            </div>
+
+            <div class="section-header" style="margin-top: 20px">
+              <h3>Permisos por Rol</h3>
+              <p>Define qué funcionalidades ve cada usuario según su rol.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+              <div style="border: 1px solid var(--border); padding: 15px; border-radius: 8px;">
+                <h4>👤 Operario</h4>
+                <label style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <input type="checkbox" id="perm-op-monitoreo" checked disabled />
+                  <span>Ver Monitoreo en Tiempo Real</span>
+                </label>
+                <label style="display: flex; gap: 8px;">
+                  <input type="checkbox" id="perm-op-alertas" checked disabled />
+                  <span>Ver/Silenciar Alertas</span>
+                </label>
+              </div>
+
+              <div style="border: 1px solid var(--border); padding: 15px; border-radius: 8px;">
+                <h4>🔧 Técnico</h4>
+                <label style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <input type="checkbox" id="perm-tec-config" checked />
+                  <span>Editar Configuración</span>
+                </label>
+                <label style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <input type="checkbox" id="perm-tec-calibrar" checked />
+                  <span>Calibrar Sensores</span>
+                </label>
+                <label style="display: flex; gap: 8px;">
+                  <input type="checkbox" id="perm-tec-backup" checked />
+                  <span>Hacer Backup</span>
+                </label>
+              </div>
+
+              <div style="border: 1px solid var(--border); padding: 15px; border-radius: 8px;">
+                <h4>⚙️ Administrador</h4>
+                <label style="display: flex; gap: 8px; margin-bottom: 8px;">
+                  <input type="checkbox" id="perm-admin-todo" checked disabled />
+                  <span>Acceso Total</span>
+                </label>
+                <label style="display: flex; gap: 8px;">
+                  <input type="checkbox" id="perm-admin-usuarios" checked />
+                  <span>Gestionar Usuarios</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- ===== TAB: MAPEO VISUAL ===== -->
+          <div id="tab-mapeo" class="tab-content" style="display: none">
             <div class="section-header">
               <h3>Distribución en Planta</h3>
-              <p>Verificación visual de la numeración de los surcos y trenes.</p>
+              <p>
+                Verificación visual de la numeración de los surcos y trenes.
+              </p>
             </div>
             <div id="mapeo-visual-canvas" class="mapeo-visual-canvas"></div>
           </div>
 
-          <!-- ═══ TAB PANTALLA ═══ -->
-          <div id="tab-pantalla" class="tab-content" style="display:none">
+          <!-- ===== TAB: PANTALLA Y SONIDO ===== -->
+          <div id="tab-pantalla" class="tab-content" style="display: none">
             <div class="section-header">
               <h3>Preferencias de Interfaz</h3>
               <p>Ajusta lo que quieres ver y escuchar en pantalla.</p>
@@ -198,7 +514,11 @@
             <div class="card-grid">
               <div class="input-card">
                 <label>Sonido de Alerta</label>
-                <select id="cfg-audio-file" class="config-select-main" onchange="probarSonido(this.value)">
+                <select
+                  id="cfg-audio-file"
+                  class="config-select-main"
+                  onchange="probarSonido(this.value)"
+                >
                   <option value="/sounds/alarma1.mp3">Beep Corto</option>
                   <option value="/sounds/sirena.mp3">Sirena Continua</option>
                   <option value="/sounds/buzzer.mp3">Buzzer Grave</option>
@@ -206,14 +526,26 @@
               </div>
               <div class="input-card">
                 <label>Panel Superior (Velocidad, Dosis)</label>
-                <select class="config-select-main" onchange="document.querySelector('.vistax-header').style.display=this.value">
+                <select
+                  class="config-select-main"
+                  onchange="
+                    document.querySelector('.vistax-header').style.display =
+                      this.value
+                  "
+                >
                   <option value="flex">Visible</option>
                   <option value="none">Oculto</option>
                 </select>
               </div>
               <div class="input-card">
                 <label>Panel Especiales (Turbinas, Ejes)</label>
-                <select class="config-select-main" onchange="document.getElementById('tren-especiales').style.display=this.value">
+                <select
+                  class="config-select-main"
+                  onchange="
+                    document.getElementById('tren-especiales').style.display =
+                      this.value
+                  "
+                >
                   <option value="flex">Visible</option>
                   <option value="none">Oculto</option>
                 </select>
@@ -221,46 +553,35 @@
             </div>
           </div>
 
-          <!-- ═══ TAB MONITOREO ═══ -->
-          <div id="tab-monitoreo" class="tab-content" style="display:none">
+          <!-- ===== TAB: MONITOREO ===== -->
+          <div id="tab-monitoreo" class="tab-content" style="display: none">
             <div class="section-header">
-              <h3>Inicio de Monitoreo</h3>
-              <p>Configura cómo y cuándo se activa el monitoreo de siembra.</p>
+              <h3>Parámetros de Monitoreo</h3>
+              <p>Configura los parámetros de alertas y monitoreo en tiempo real.</p>
             </div>
 
             <div class="card-grid">
-              <div class="input-card" style="grid-column: span 2;">
-                <label>Método de Inicio</label>
-                <select id="cfg-metodo-inicio" class="config-select-main">
-                  <option value="sensores">Por Sensores (caída de semilla detectada)</option>
-                  <option value="herramienta">Por Sensor de Implemento (herramienta baja)</option>
-                  <option value="pintando">Por AOG pintando (bridge)</option>
-                  <option value="manual">Manual (botón en pantalla)</option>
+              <div class="input-card">
+                <label>Tiempo de Alerta (segundos)</label>
+                <input type="number" id="cfg-alarma-tiempo" placeholder="2" />
+              </div>
+              <div class="input-card">
+                <label>Velocidad Mínima para Alertar (km/h)</label>
+                <input type="number" id="cfg-vel-minima-alerta" placeholder="1.5" step="0.1" />
+              </div>
+              <div class="input-card">
+                <label>Mostrar Gráficos de Densidad</label>
+                <select class="config-select-main">
+                  <option value="si">Sí</option>
+                  <option value="no">No</option>
                 </select>
               </div>
               <div class="input-card">
-                <label>Umbral de Sensores Activos</label>
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <input type="range" id="cfg-umbral-sensores" min="1" max="10" value="3"
-                    style="flex:1" oninput="document.getElementById('cfg-umbral-val').textContent=this.value" />
-                  <span id="cfg-umbral-val" style="color:var(--accent);font-weight:700;font-size:14px;min-width:20px">3</span>
-                </div>
-                <small style="color:#444;font-size:10px">Cantidad mínima de sensores con flujo para iniciar.</small>
-              </div>
-              <div class="input-card">
-                <label>Tiempo de Confirmación (ms)</label>
-                <input type="number" id="cfg-tiempo-confirmacion" value="500" step="100" min="0" />
-                <small style="color:#444;font-size:10px">Espera antes de confirmar el inicio (evita falsos positivos).</small>
-              </div>
-            </div>
-
-            <div style="margin-top:20px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:6px;padding:16px;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div id="monitoreo-estado-dot" style="width:10px;height:10px;border-radius:50%;background:#333;flex-shrink:0"></div>
-                <div>
-                  <div style="font-size:10px;color:#555;text-transform:uppercase;font-weight:700">Estado Actual</div>
-                  <div id="monitoreo-estado-txt" style="font-size:13px;color:#888;font-weight:600">Conectando...</div>
-                </div>
+                <label>Registrar Datos (Lote Activo)</label>
+                <select class="config-select-main">
+                  <option value="si" selected>Sí</option>
+                  <option value="no">No</option>
+                </select>
               </div>
             </div>
           </div>
@@ -273,12 +594,12 @@
       <button class="btn-footer btn-cancel" onclick="cerrarModal()">
         <i class="fas fa-times"></i> DESCARTAR
       </button>
-      <button class="btn-footer btn-save" onclick="guardarConfiguracionCompleta()">
+      <button
+        class="btn-footer btn-save"
+        onclick="guardarConfiguracionCompleta()"
+      >
         <i class="fas fa-save"></i> GUARDAR Y APLICAR
       </button>
     </div>
   </div>
 </div>
-
-<!-- Modal OTA (sin cambios) -->
-<%- include('config_ota_modal') %>

@@ -24,7 +24,7 @@ const lotesRoutes = require("./routes/lotes.routes");
 const firmwareRoutes = require("./routes/firmware.routes");
 const debugRoutes = require("./routes/debug.routes");
 const nodosRoutes = require("./routes/nodos.routes");
-
+const audioRoutes    = require("./routes/audio.routes");
 
 
 const app = express();
@@ -63,7 +63,8 @@ seedRecorder.recuperarLoteActivo();
 app.use("/api/config", configRoutes);
 app.use("/api/lotes", lotesRoutes);
 app.use("/api/firmware", firmwareRoutes);
-
+app.use("/api/audio", audioRoutes);
+console.log("[VistaX] ✅ audio.routes montado en /api/audio");
 // Mapa: recibe (io, mqttHandler) para cierre centralizado
 let mapaRoutes;
 try {
@@ -121,6 +122,9 @@ app.get("/bar", (req, res) => {
   const config = profilesManager.getActiveProfile(name) || {};
   res.render("bar", { config });
 });
+ app.get("/prueba", (req, res) => {
+    res.render("prueba");
+  });
 app.get("/debug", (req, res) => {
   res.render("debug_monitoreo");
 });

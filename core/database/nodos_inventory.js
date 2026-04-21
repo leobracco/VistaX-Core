@@ -279,6 +279,71 @@ function estaIgnorado(uid) {
   return !!inventario.nodos[uid]?.ignorado;
 }
 
+function reemplazarNodo(uidViejo, uidNuevo, opts = {}) {
+  const viejo = inventario.nodos[uidViejo];
+  const nuevo = inventario.nodos[uidNuevo];
+ 
+  if (!viejo) return { ok: false, error: "viejo_no_existe" };
+  if (!nuevo) return { ok: false, error: "nuevo_no_existe" };
+  if (uidViejo === uidNuevo) return { ok: false, error: "mismo_uid" };
+ 
+  const ahora = new Date().toISOString();
+ 
+  // Marcar el viejo como reemplazado e ignorado
+  viejo.ignorado        = true;
+  viejo.reemplazado_por = uidNuevo;
+  viejo.reemplazado_at  = ahora;
+ 
+  // Heredar alias/notas si se pidió
+  if (opts.heredarAlias && viejo.alias) nuevo.alias = viejo.alias;
+  if (opts.heredarNotas && viejo.notas) nuevo.notas = viejo.notas;
+ 
+  // Migrar mapeo_sensores en TODOS los perfiles (excepto los bloqueados)
+  const perfilesAfectados = [];
+  let sensoresMigrados = 0;
+ 
+  try {
+    const PROFILES_DIR = path.join(__dirname, "../../data/implementos");
+    const todos = profilesManager.listProfiles();
+ 
+    for (const id of todos) {
+      const p = profilesManager.getActiveProfile(id);
+      if (!p?.mapeo_sensores) continue;
+      if (p._locked) {
+        console.warn(`[NodosInv] Perfil ${id} bloqueado — no se migra ${uidViejo} → ${uidNuevo}`);
+        continue;
+      }
+ 
+      let cambios = 0;
+      p.mapeo_sensores.forEach(s => {
+        if (s.uid === uidViejo) {
+          s.uid = uidNuevo;
+          cambios++;
+        }
+      });
+ 
+      if (cambios > 0) {
+        fs.writeFileSync(
+          path.join(PROFILES_DIR, `${id}.json`),
+          JSON.stringify(p, null, 2)
+        );
+        perfilesAfectados.push({ id, sensores: cambios });
+        sensoresMigrados += cambios;
+      }
+    }
+  } catch (e) {
+    console.error("[NodosInv] Error migrando perfiles:", e.message);
+  }
+ 
+  _guardar();
+  console.log(
+    `[NodosInv] Reemplazo: ${uidViejo} → ${uidNuevo} ` +
+    `(${sensoresMigrados} sensores en ${perfilesAfectados.length} perfiles)`
+  );
+ 
+  return { ok: true, perfilesAfectados, sensoresMigrados };
+}
+
 module.exports = {
   upsertFromHeartbeat,
   listAll,
@@ -290,4 +355,5 @@ module.exports = {
   buscarEnPerfiles,
   getUidsIgnorados,
   estaIgnorado,
+  reemplazarNodo,
 };

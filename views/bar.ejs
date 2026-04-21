@@ -9,40 +9,108 @@
 <body>
   <script>window.APP_CONFIG = <%- JSON.stringify(config || {}) %>;</script>
 
+  <!-- ═══════════ Banner inicial de activación de audio ═══════════ -->
+  <div id="audio-unlock-overlay" class="audio-unlock-overlay">
+    <div class="audio-unlock-content">
+      <div class="audio-unlock-logo">
+        VISTA<span class="accent">X</span>
+      </div>
+      <div class="audio-unlock-icon">
+        <i class="fas fa-hand-pointer"></i>
+      </div>
+      <div class="audio-unlock-title">TOCÁ PARA ACTIVAR</div>
+      <div class="audio-unlock-subtitle">Necesario para habilitar las alarmas sonoras</div>
+    </div>
+  </div>
+
   <div class="app">
-    <!-- Barra título mínima -->
+
+    <!-- ═══════════ HEADER 24px — Agro Parallel branding ═══════════ -->
     <div class="titlebar">
       <div class="drag">
-        <span class="brand">VistaX</span>
+        <span class="brand">VISTA<span class="accent">X</span></span>
+        <span class="mon-badge standby" id="mon-badge">
+          <i class="fas fa-circle"></i>
+          <span id="mon-text">STAND-BY</span>
+        </span>
         <span class="st" id="tb-st">· Conectado</span>
       </div>
-      <button class="tb-btn" onclick="window.open('/config','config','width=900,height=700')" title="Configuración"><i class="fas fa-cog"></i></button>
-      <button class="tb-btn" onclick="toggleMuteBar()" title="Silenciar alarmas"><i class="fas fa-volume-up" id="tb-mute-icon"></i></button>
-      <button class="tb-btn tb-close" onclick="window.close()" title="Cerrar">✕</button>
+      <button class="tb-btn" onclick="window.open('/prueba','prueba','width=360,height=640,resizable=yes')" title="Prueba de sensores">
+        <i class="fas fa-vial"></i>
+      </button>
+      <button class="tb-btn" onclick="window.open('/config','config','width=900,height=700')" title="Configuración">
+        <i class="fas fa-cog"></i>
+      </button>
+      <button class="tb-btn" onclick="toggleMuteBar()" title="Silenciar alarmas">
+        <i class="fas fa-volume-up" id="tb-mute-icon"></i>
+      </button>
+      <button class="tb-btn tb-close" onclick="window.close()" title="Cerrar">
+        <i class="fas fa-xmark"></i>
+      </button>
     </div>
 
     <div class="body">
-      <!-- KPIs izquierda -->
+
+      <!-- ═══════════ KPIs izquierda ═══════════ -->
       <div class="panel-left">
-        <div class="kpi"><span class="lb">VEL</span><span class="vl w" id="pv-vel">0.0</span><span class="un">km/h</span></div>
-        <div class="kpi"><span class="lb">OBJ</span><span class="vl g" id="pv-obj"><%- config.setup?.densidad_objetivo || 16 %></span><span class="un">s/m</span></div>
-        <div class="kpi"><span class="lb">PROM</span><span class="vl w" id="pv-spm">0.0</span><span class="un">s/m</span></div>
-        <div class="kpi"><span class="lb">FALLAS</span><span class="vl r" id="pv-fallas">0</span></div>
+        <div class="kpi">
+          <i class="fas fa-gauge-high kpi-icon"></i>
+          <div class="kpi-data">
+            <span class="vl w" id="pv-vel">0.0</span>
+            <span class="un">km/h</span>
+          </div>
+        </div>
+        <div class="kpi">
+          <i class="fas fa-bullseye kpi-icon"></i>
+          <div class="kpi-data">
+            <span class="vl g" id="pv-obj"><%- config.setup?.densidad_objetivo || 16 %></span>
+            <span class="un">obj</span>
+          </div>
+        </div>
+        <div class="kpi">
+          <i class="fas fa-seedling kpi-icon"></i>
+          <div class="kpi-data">
+            <span class="vl w" id="pv-spm">0.0</span>
+            <span class="un">s/m</span>
+          </div>
+        </div>
+        <div class="kpi">
+          <i class="fas fa-triangle-exclamation kpi-icon"></i>
+          <div class="kpi-data">
+            <span class="vl r" id="pv-fallas">0</span>
+            <span class="un">fallas</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Tubos centro -->
+      <!-- ═══════════ Tubos centro ═══════════ -->
       <div class="center">
         <div class="row" id="tren-top"></div>
         <div class="row" id="tren-bot"></div>
       </div>
 
-      <!-- Especiales derecha -->
+      <!-- ═══════════ Especiales derecha ═══════════ -->
       <div class="panel-right">
-        <div class="ei" id="ei-rpm" style="display:none"><i class="fas fa-fan"></i><span class="vl" id="ev-rpm">—</span></div>
-        <div class="ei" id="ei-eje1" style="display:none"><i class="fas fa-cogs"></i><span class="vl" id="ev-eje1">—</span></div>
-        <div class="ei" id="ei-eje2" style="display:none"><i class="fas fa-cogs"></i><span class="vl" id="ev-eje2">—</span></div>
-        <div class="ei" id="ei-tolva1" style="display:none"><i class="fas fa-archive"></i><span class="vl" id="ev-tolva1">—</span></div>
-        <div class="ei" id="ei-tolva2" style="display:none"><i class="fas fa-archive"></i><span class="vl" id="ev-tolva2">—</span></div>
+        <div class="ei" id="ei-rpm" style="display:none">
+          <i class="fas fa-fan"></i>
+          <span class="vl" id="ev-rpm">—</span>
+        </div>
+        <div class="ei" id="ei-eje1" style="display:none">
+          <i class="fas fa-arrows-spin"></i>
+          <span class="vl" id="ev-eje1">—</span>
+        </div>
+        <div class="ei" id="ei-eje2" style="display:none">
+          <i class="fas fa-arrows-spin"></i>
+          <span class="vl" id="ev-eje2">—</span>
+        </div>
+        <div class="ei" id="ei-tolva1" style="display:none">
+          <i class="fas fa-box"></i>
+          <span class="vl" id="ev-tolva1">—</span>
+        </div>
+        <div class="ei" id="ei-tolva2" style="display:none">
+          <i class="fas fa-box"></i>
+          <span class="vl" id="ev-tolva2">—</span>
+        </div>
       </div>
     </div>
   </div>
